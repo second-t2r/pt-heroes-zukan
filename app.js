@@ -93,7 +93,7 @@ function cardHtml(h, i) {
 
 function radarSvg(stats5) {
   const keys = ["power", "speed", "technique", "intelligence", "cooperation"];
-  const cx = 100, cy = 96, R = 66;
+  const cx = 100, cy = 94, R = 60;
   const ang = (i) => (-90 + i * 72) * Math.PI / 180;
   const pt = (i, r) => [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))];
   let grid = "";
@@ -110,13 +110,14 @@ function radarSvg(stats5) {
   }).join(" ");
   let labels = "";
   keys.forEach((k, i) => {
-    const [x, y] = pt(i, R + 15);
+    const [x, y] = pt(i, R + 13);
     const rk = String(stats5[k] || "E").toUpperCase();
     const anchor = Math.abs(x - cx) < 6 ? "middle" : (x > cx ? "start" : "end");
     labels += `<text class="lab" x="${x.toFixed(1)}" y="${(y - 2).toFixed(1)}" text-anchor="${anchor}">${esc(statLabel(k))}</text>`;
-    labels += `<text class="rank-lab" x="${x.toFixed(1)}" y="${(y + 8).toFixed(1)}" text-anchor="${anchor}">${rk}</text>`;
+    labels += `<text class="rank-lab" x="${x.toFixed(1)}" y="${(y + 9).toFixed(1)}" text-anchor="${anchor}">${rk}</text>`;
   });
-  return `<div class="radar"><svg viewBox="0 0 200 205" role="img" aria-label="ステータスレーダー">
+  // ラベルがはみ出さないよう左右・上下に余白を持たせた viewBox
+  return `<div class="radar"><svg viewBox="-32 -4 264 208" role="img" aria-label="ステータスレーダー">
     ${grid}${axes}<polygon class="shape" points="${shapePts}"/>${labels}
   </svg></div>`;
 }
