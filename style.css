@@ -164,7 +164,7 @@ body {
 /* portrait panel */
 .card .portrait {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 4;
   border-bottom: 3px solid var(--ink);
   overflow: hidden;
   display: flex; align-items: center; justify-content: center;
@@ -187,7 +187,7 @@ body {
   background-size: 8px 8px;
   pointer-events: none;
 }
-.card .portrait img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.card .portrait img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; object-position: center; }
 .card .portrait .ph {
   position: relative; z-index: 2; text-align: center; padding: 14px;
   color: #fff; -webkit-text-stroke: .4px var(--ink);
@@ -283,7 +283,7 @@ body {
   background-image: radial-gradient(rgba(22,19,15,.16) 1.4px, transparent 1.6px);
   background-size: 8px 8px; pointer-events: none;
 }
-.detail .d-portrait img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.detail .d-portrait img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; object-position: center; }
 .detail .d-portrait .ph { position: relative; z-index: 1; color:#fff; font-weight: 800; text-align:center; padding: 12px; -webkit-text-stroke:.4px var(--ink); }
 
 .detail .d-quote {
