@@ -236,7 +236,7 @@ body {
   background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.4px);
   background-size: 7px 7px;
 }
-.modal-body { position: relative; width: min(520px, 96vw); max-height: 92vh; overflow: auto; }
+.modal-body { position: relative; width: min(940px, 97vw); max-height: 94vh; overflow-x: hidden; overflow-y: auto; }
 .modal-close {
   position: absolute; top: -10px; right: -10px; z-index: 3;
   width: 38px; height: 38px; border-radius: 50%;
@@ -262,15 +262,19 @@ body {
   font-size: 12px; font-weight: 800; letter-spacing: 1px;
   background: var(--ink); padding: 2px 8px;
 }
-.detail .d-field { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; }
-.detail .d-name { font-size: 26px; font-weight: 900; margin: 2px 0 0; -webkit-text-stroke: .5px var(--ink); }
-.detail .d-name small { font-size: 12px; letter-spacing: 1.5px; }
-.detail .d-code { font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-top: 2px; }
+.detail .d-field { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; }
+.detail .d-name { font-size: 28px; font-weight: 900; margin: 3px 0 0; -webkit-text-stroke: .5px var(--ink); }
+.detail .d-name small { font-size: 13px; letter-spacing: 1.5px; }
+.detail .d-code { font-size: 12px; font-weight: 800; letter-spacing: 2px; margin-top: 3px; }
 
-.detail .d-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+/* 横2カラム：クリック後にカード全体が1画面に収まるレイアウト */
+.detail .d-main { display: flex; align-items: stretch; }
+.detail .d-left { flex: 0 0 42%; display: flex; flex-direction: column; border-right: 3px solid var(--ink); }
+.detail .d-right { flex: 1 1 auto; min-width: 0; }
+
 .detail .d-portrait {
-  position: relative; aspect-ratio: 3 / 4; overflow: hidden;
-  border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink);
+  position: relative; height: 340px; overflow: hidden;
+  border-bottom: 3px solid var(--ink);
   background: var(--c);
   display: flex; align-items: center; justify-content: center;
 }
@@ -282,50 +286,56 @@ body {
 .detail .d-portrait img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
 .detail .d-portrait .ph { position: relative; z-index: 1; color:#fff; font-weight: 800; text-align:center; padding: 12px; -webkit-text-stroke:.4px var(--ink); }
 
-.detail .d-stat-col { border-bottom: 3px solid var(--ink); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-.radar-wrap { text-align: center; }
-.radar-wrap h4, .d-stat-col h4 { margin: 0 0 6px; font-size: 11px; font-weight: 900; letter-spacing: 1px; }
-.numbers { display: flex; gap: 12px; justify-content: center; }
-.numbers .n {
-  border: 2.5px solid var(--ink); background: #fff; padding: 5px 8px; text-align: center; min-width: 62px;
-}
-.numbers .n b { display: block; font-size: 9px; letter-spacing: 1px; }
-.numbers .n .v { font-size: 17px; font-weight: 900; }
-
 .detail .d-quote {
-  grid-column: 1 / -1;
-  margin: 0; padding: 14px 18px;
-  font-weight: 800; font-size: 15px; line-height: 1.55; text-align: center;
-  border-bottom: 3px solid var(--ink);
-  background:
-    repeating-linear-gradient(45deg, rgba(22,19,15,.04) 0 6px, transparent 6px 12px);
+  margin: 0; padding: 14px 16px; flex: 1 1 auto;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 16px; line-height: 1.6; text-align: center;
+  background: repeating-linear-gradient(45deg, rgba(22,19,15,.04) 0 6px, transparent 6px 12px);
 }
 
-.detail .sec { padding: 11px 16px; border-bottom: 2px solid rgba(22,19,15,.25); }
+.detail .d-status {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-bottom: 2px solid rgba(22,19,15,.25);
+}
+.radar-wrap { text-align: center; flex: 0 0 auto; }
+.radar-wrap h4, .d-status > h4 { margin: 0 0 4px; font-size: 12px; font-weight: 900; letter-spacing: 1px; }
+.numbers { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; }
+.numbers .n {
+  border: 2.5px solid var(--ink); background: #fff; padding: 5px 12px; text-align: center;
+}
+.numbers .n b { display: block; font-size: 10px; letter-spacing: 1px; }
+.numbers .n .v { font-size: 20px; font-weight: 900; }
+
+.detail .sec { padding: 10px 16px; border-bottom: 2px solid rgba(22,19,15,.22); }
 .detail .sec:last-child { border-bottom: none; }
 .detail .sec h4 {
-  display: inline-block; margin: 0 0 6px;
+  display: inline-block; margin: 0 0 5px;
   background: var(--ink); color: #fff;
-  font-size: 11px; font-weight: 900; letter-spacing: 1px;
-  padding: 3px 9px; transform: skewX(-8deg);
+  font-size: 12px; font-weight: 900; letter-spacing: 1px;
+  padding: 3px 10px; transform: skewX(-8deg);
 }
 .detail .sec h4 span { display: inline-block; transform: skewX(8deg); }
-.detail .sec .h-name { font-weight: 900; font-size: 14px; margin-bottom: 3px; }
-.detail .sec p { margin: 0; font-size: 12.5px; line-height: 1.6; color: #3a352c; }
+.detail .sec .h-name { font-weight: 900; font-size: 15px; margin-bottom: 3px; }
+.detail .sec p { margin: 0; font-size: 13.5px; line-height: 1.6; color: #33302a; }
 
 /* radar svg */
-.radar svg { width: 100%; max-width: 190px; height: auto; }
+.radar svg { width: 100%; max-width: 200px; height: auto; }
 .radar .grid-line { fill: none; stroke: rgba(22,19,15,.28); stroke-width: 1; }
 .radar .axis { stroke: rgba(22,19,15,.4); stroke-width: 1; }
 .radar .shape { fill: color-mix(in srgb, var(--c) 45%, transparent); stroke: var(--ink); stroke-width: 2.5; }
-.radar .lab { font-size: 9px; font-weight: 800; fill: var(--ink); }
-.radar .rank-lab { font-size: 9px; font-weight: 900; fill: var(--ink); }
+.radar .lab { font-size: 12px; font-weight: 800; fill: var(--ink); }
+.radar .rank-lab { font-size: 12px; font-weight: 900; fill: var(--ink); }
 
-@media (max-width: 560px) {
+@media (max-width: 760px) {
+  .modal-body { width: 96vw; }
+  .detail .d-main { flex-direction: column; }
+  .detail .d-left { flex: none; border-right: none; border-bottom: 3px solid var(--ink); }
+  .detail .d-portrait { height: auto; aspect-ratio: 3 / 4; }
+  .detail .d-quote { padding: 12px 16px; }
+}
+@media (max-width: 520px) {
   .brand h1 { font-size: 38px; }
   .brand h1 .zukan { font-size: 24px; }
-  .detail .d-body { grid-template-columns: 1fr; }
-  .detail .d-portrait { border-right: none; }
 }
 
 /* ===== パスワードゲート ===== */

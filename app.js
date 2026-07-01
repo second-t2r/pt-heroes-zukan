@@ -150,15 +150,19 @@ function detailHtml(h, i) {
       <div class="d-name display">${esc(h.name)} <small>${esc(h.name_en || "")}</small></div>
       <div class="d-code">CODE NAME : ${esc(h.code_name || "")}</div>
     </div>
-    <div class="d-body">
-      <div class="d-portrait">${portrait(h)}</div>
-      <div class="d-stat-col">${statBlock(h)}</div>
-      ${h.quote ? `<p class="d-quote">「${esc(h.quote)}」</p>` : ""}
+    <div class="d-main">
+      <div class="d-left">
+        <div class="d-portrait">${portrait(h)}</div>
+        ${h.quote ? `<p class="d-quote">「${esc(h.quote)}」</p>` : ""}
+      </div>
+      <div class="d-right">
+        <div class="d-status">${statBlock(h)}</div>
+        ${sectionHtml("SUPER POWER（固有能力）", h.super_power)}
+        ${sectionHtml("HERO ROLE", h.hero_role)}
+        ${sectionHtml("SOUL HERO", h.soul_hero)}
+        ${secret}
+      </div>
     </div>
-    ${sectionHtml("SUPER POWER（固有能力）", h.super_power)}
-    ${sectionHtml("HERO ROLE", h.hero_role)}
-    ${sectionHtml("SOUL HERO", h.soul_hero)}
-    ${secret}
   </div>`;
 }
 
