@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "title": "PT HEROES 図鑑",
+    "subtitle": "PEOPLE TREES HERO DATABOOK",
+    "note": "限定公開。社外共有・SNS掲載はしないでください。",
+    "colors": {
+      "blue":   { "label": "制度系", "hex": "#2f7bf6" },
+      "red":    { "label": "育成系", "hex": "#e5484d" },
+      "green":  { "label": "コーポレート", "hex": "#17b978" },
+      "purple": { "label": "組織開発", "hex": "#8b5cf6" },
+      "orange": { "label": "採用支援", "hex": "#f59e0b" },
+      "cyan":   { "label": "HRテック", "hex": "#22d3ee" }
+    },
+    "stat_labels": {
+      "power": "パワー",
+      "speed": "スピード",
+      "technique": "技",
+      "intelligence": "頭脳",
+      "cooperation": "協調性"
+    }
+  },
+  "heroes": [
+    {
+      "slug": "yoshimoto-riho",
+      "name": "吉本 理帆",
+      "name_en": "RIHO YOSHIMOTO",
+      "code_name": "STRATEGIC BLADE",
+      "field": "HR & STRUCTURAL STRATEGIST",
+      "color": "green",
+      "domain": "コーポレート",
+      "rank": "A",
+      "catchphrase": "不屈の真摯なる伴走者、堅牢なる基盤の守護神",
+      "quote": "ピンチこそ、限界突破のステージ。大変な状況も楽しむ！頑張る人が輝く世界を創り出す",
+      "speed": 9999,
+      "hp": 8500,
+      "ai_log": "MIDDLE",
+      "stats5": { "power": "B", "speed": "A", "technique": "A", "intelligence": "B", "cooperation": "A" },
+      "super_power": {
+        "name": "迅速丁寧の構え（ハイパースピード・ケア）",
+        "desc": "どんな依頼や質問にも、極限のスピードと丁寧さを両立して完璧に打ち返す、職人級の基本戦闘スタンス。"
+      },
+      "hero_role": {
+        "name": "フロント・バランサー & オペレーション・コマンダー",
+        "desc": "お客様との関係構築からバックアップまでこなすチームの絶対的守護神。"
+      },
+      "soul_hero": {
+        "name": "ロロノア・ゾロ（ONE PIECE）",
+        "desc": "古い文化の壁を斬り伏せ、頑張る人が評価される新時代を目指すストイックな魂に共鳴。"
+      },
+      "secret_data": "実は、テト1の称号を持つガチゲーマー！テトリスで培った判断力が武器。",
+      "illustration": ""
+    },
+    {
+      "slug": "sample-blue",
+      "name": "（サンプル）制度 太郎",
+      "name_en": "SAMPLE TARO",
+      "code_name": "SYSTEM ARCHITECT",
+      "field": "HR SYSTEM DESIGNER",
+      "color": "blue",
+      "domain": "人事制度設計・運用支援",
+      "rank": "B",
+      "catchphrase": "秩序を編み、組織を貫く設計者",
+      "quote": "ルールは縛るためでなく、人を自由にするために創る。",
+      "speed": 8800,
+      "hp": 9200,
+      "ai_log": "HIGH",
+      "stats5": { "power": "A", "speed": "C", "technique": "A", "intelligence": "A", "cooperation": "B" },
+      "super_power": {
+        "name": "グランドデザイン（全体設計）",
+        "desc": "複雑な制度要件を一枚の設計図にまとめ上げる構造化の力。"
+      },
+      "hero_role": {
+        "name": "システム・アーキテクト",
+        "desc": "評価・等級・報酬を横断して設計する制度の司令塔。"
+      },
+      "soul_hero": {
+        "name": "（記入例）任意のヒーロー",
+        "desc": "共鳴する理由を1〜2行で。"
+      },
+      "secret_data": "（記入例）意外な特技や裏設定を1行で。",
+      "illustration": ""
+    },
+    {
+      "slug": "sample-red",
+      "name": "（サンプル）育成 花子",
+      "name_en": "SAMPLE HANAKO",
+      "code_name": "GROWTH IGNITER",
+      "field": "TALENT DEVELOPMENT LEADER",
+      "color": "red",
+      "domain": "研修・育成",
+      "rank": "B",
+      "catchphrase": "人の可能性に火を灯す者",
+      "quote": "できないは、まだやっていないだけ。",
+      "speed": 9100,
+      "hp": 8700,
+      "ai_log": "HIGH",
+      "stats5": { "power": "B", "speed": "A", "technique": "B", "intelligence": "B", "cooperation": "A" },
+      "super_power": {
+        "name": "イグニッション（着火）",
+        "desc": "相手の内側の火種を見つけ、成長への一歩を引き出す。"
+      },
+      "hero_role": {
+        "name": "グロース・イグナイター",
+        "desc": "研修設計から現場定着までを伴走する育成の主砲。"
+      },
+      "soul_hero": {
+        "name": "（記入例）任意のヒーロー",
+        "desc": "共鳴する理由を1〜2行で。"
+      },
+      "secret_data": "（記入例）意外な特技や裏設定を1行で。",
+      "illustration": ""
+    }
+  ]
+}

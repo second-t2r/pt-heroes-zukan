@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 限定公開: 検索エンジンにインデックスさせない -->
+  <meta name="robots" content="noindex, nofollow">
+  <title>PT HEROES 図鑑</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <h1 class="display">PT HEROES <span class="zukan">図鑑</span></h1>
+      <p class="subtitle" id="subtitle">PEOPLE TREES HERO DATABOOK</p>
+    </div>
+    <div class="notice" id="notice">限定公開</div>
+  </header>
+
+  <nav class="toolbar">
+    <div class="filters" id="filters"><!-- 属性チップを動的生成 --></div>
+    <input type="search" id="search" class="search" placeholder="名前・コードネームで検索" aria-label="検索">
+  </nav>
+
+  <main>
+    <div class="grid" id="grid"><!-- カードを動的生成 --></div>
+    <p class="empty" id="empty" hidden>該当するヒーローがいません。</p>
+  </main>
+
+  <footer class="site-footer">
+    <span id="count"></span>
+    <span class="foot-note">社外共有・SNS掲載はしないでください。</span>
+  </footer>
+
+  <!-- 詳細モーダル -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-body" role="dialog" aria-modal="true">
+      <button class="modal-close" data-close aria-label="閉じる">×</button>
+      <div class="modal-card" id="modalCard"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
