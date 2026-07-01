@@ -9,6 +9,18 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- パスワードゲート（正しいパスワードでのみデータを復号） -->
+  <div class="gate" id="gate">
+    <form class="gate-box" id="gateForm">
+      <h1 class="display gate-title">PT HEROES <span class="zukan">図鑑</span></h1>
+      <p class="gate-sub">合言葉を入力してください</p>
+      <input type="password" id="gatePw" class="gate-input" placeholder="パスワード" autocomplete="off" autofocus>
+      <button type="submit" class="gate-btn display" id="gateBtn">ENTER</button>
+      <p class="gate-err" id="gateErr" hidden>パスワードが違います</p>
+    </form>
+  </div>
+
+  <div id="app" hidden>
   <header class="site-header">
     <div class="brand">
       <h1 class="display">PT HEROES <span class="zukan">図鑑</span></h1>
@@ -40,6 +52,7 @@
       <div class="modal-card" id="modalCard"></div>
     </div>
   </div>
+  </div><!-- /#app -->
 
   <script src="app.js"></script>
 </body>

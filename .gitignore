@@ -1,0 +1,6 @@
+# 平文データは公開しない（暗号化した heroes.enc のみ公開）
+data/heroes.json
+
+# 元写真（顔写真）は公開リポジトリに入れない
+assets/illustrations/_source_*
+*_source*.jpg

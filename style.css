@@ -328,6 +328,45 @@ body {
   .detail .d-portrait { border-right: none; }
 }
 
+/* ===== パスワードゲート ===== */
+.gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(rgba(22,19,15,.10) 1.2px, transparent 1.4px),
+    radial-gradient(rgba(22,19,15,.06) 1.2px, transparent 1.4px);
+  background-size: 12px 12px, 12px 12px;
+  background-position: 0 0, 6px 6px;
+}
+.gate[hidden] { display: none; }
+.gate-box {
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: var(--hard-shadow);
+  padding: 30px 26px;
+  width: min(360px, 92vw);
+  text-align: center;
+}
+.gate-title { font-size: 34px; margin: 0 0 4px; color: #fff; -webkit-text-stroke: 2px var(--ink); }
+.gate-title .zukan { font-size: 24px; }
+.gate-sub { font-weight: 800; font-size: 13px; margin: 6px 0 18px; }
+.gate-input {
+  width: 100%; box-sizing: border-box;
+  border: 2.5px solid var(--ink); padding: 11px 14px;
+  font-size: 16px; font-weight: 700; margin-bottom: 12px;
+  box-shadow: 2px 2px 0 rgba(22,19,15,.85);
+}
+.gate-btn {
+  width: 100%; border: 3px solid var(--ink); cursor: pointer;
+  background: #ffd21e; color: var(--ink);
+  font-size: 20px; padding: 10px; letter-spacing: 2px;
+  box-shadow: var(--hard-shadow-sm);
+}
+.gate-btn:active { transform: translate(2px,2px); box-shadow: none; }
+.gate-err { color: #e5484d; font-weight: 800; font-size: 13px; margin: 12px 0 0; }
+.gate-btn.loading { opacity: .6; pointer-events: none; }
+
 /* 印刷 */
 @media print {
   body { background: #fff; }
