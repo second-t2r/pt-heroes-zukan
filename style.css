@@ -262,25 +262,27 @@ body {
   box-shadow: var(--hard-shadow);
 }
 
-/* フルカード画像の詳細表示（カードをそのまま大きく・1画面に収める） */
-.detail-full {
-  position: relative; background: #0d2823;
-  width: min(600px, 92vw, calc(86vh * 1696 / 2528));
-  margin: 0 auto;
+/* フルカード画像の詳細表示（左＝カードそのまま／右＝ステータス。縦幅はカードに合わせる） */
+.detail.detail-card .d-left-card {
+  flex: 0 0 auto;
+  background: #0d2823;
+  align-items: center; justify-content: center;
+  padding: 12px;
 }
-.detail-full .d-num {
-  position: absolute; top: -3px; left: -3px; z-index: 2;
-  background: var(--ink); color: #fff;
-  font-size: 13px; font-weight: 800; letter-spacing: 1px;
-  padding: 4px 9px;
+.detail-card .d-cardimg {
+  aspect-ratio: 1696 / 2528;
+  height: min(72vh, 720px);
+  max-width: 46vw;
 }
-.detail-full .d-cardimg { aspect-ratio: 1696 / 2528; }
-.detail-full .d-cardimg img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.detail-full .d-cardimg .ph {
+.detail-card .d-cardimg img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.detail-card .d-cardimg .ph {
   width: 100%; height: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: #fff; font-weight: 800; text-align: center; padding: 12px;
 }
+.detail-card .d-right { overflow-y: auto; }
+/* カード版は右パネルを 60% 前後にするため本体を広げる */
+.modal-body:has(.detail-card) { width: min(1180px, 96vw); }
 .detail .d-top {
   position: relative;
   background: var(--c); color: #fff;
@@ -357,11 +359,12 @@ body {
 .radar .rank-lab { font-size: 12px; font-weight: 900; fill: var(--ink); }
 
 @media (max-width: 760px) {
-  .modal-body { width: 96vw; }
+  .modal-body, .modal-body:has(.detail-card) { width: 96vw; }
   .detail .d-main { flex-direction: column; }
   .detail .d-left { flex: none; border-right: none; border-bottom: 3px solid var(--ink); }
   .detail .d-portrait { height: auto; aspect-ratio: 3 / 4; }
   .detail .d-quote { padding: 12px 16px; }
+  .detail-card .d-cardimg { height: auto; width: 100%; max-width: 320px; margin: 0 auto; }
 }
 @media (max-width: 520px) {
   .brand h1 { font-size: 38px; }

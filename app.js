@@ -153,34 +153,39 @@ function sectionHtml(label, obj) {
 
 function detailHtml(h, i) {
   const hex = colorHex(h.color);
-  // フルカード画像がある場合は、カードをそのまま大きく表示
-  if (h.card) {
-    return `<div class="detail detail-full" style="--c:${hex}">
-      <div class="d-num">${no(i)}</div>
-      <div class="d-cardimg">${encImg(h.card, h.name)}</div>
-    </div>`;
-  }
   const rankBadge = h.rank ? ` ／ RANK ${esc(h.rank)}` : "";
   const secret = h.secret_data ? `<div class="sec"><h4><span>SECRET DATA</span></h4><p>${esc(h.secret_data)}</p></div>` : "";
-  return `<div class="detail" style="--c:${hex}">
-    <div class="d-top">
+  const header = `<div class="d-top">
       <div class="d-num">${no(i)}</div>
       <div class="d-field">[FIELD] ${esc(h.field || "")} — ${esc(colorLabel(h.color))}${rankBadge}</div>
       <div class="d-name display">${esc(h.name)} <small>${esc(h.name_en || "")}</small></div>
       <div class="d-code">CODE NAME : ${esc(h.code_name || "")}</div>
-    </div>
+    </div>`;
+  const rightContent = `<div class="d-status">${statBlock(h)}</div>
+        ${sectionHtml("SUPER POWER（固有能力）", h.super_power)}
+        ${sectionHtml("HERO ROLE", h.hero_role)}
+        ${sectionHtml("SOUL HERO", h.soul_hero)}
+        ${secret}`;
+  // フルカード画像がある場合：左にカードをそのまま表示、右にステータス
+  if (h.card) {
+    return `<div class="detail detail-card" style="--c:${hex}">
+      ${header}
+      <div class="d-main">
+        <div class="d-left d-left-card">
+          <div class="d-cardimg">${encImg(h.card, h.name)}</div>
+        </div>
+        <div class="d-right">${rightContent}</div>
+      </div>
+    </div>`;
+  }
+  return `<div class="detail" style="--c:${hex}">
+    ${header}
     <div class="d-main">
       <div class="d-left">
         <div class="d-portrait">${portrait(h)}</div>
         ${h.quote ? `<p class="d-quote">「${esc(h.quote)}」</p>` : ""}
       </div>
-      <div class="d-right">
-        <div class="d-status">${statBlock(h)}</div>
-        ${sectionHtml("SUPER POWER（固有能力）", h.super_power)}
-        ${sectionHtml("HERO ROLE", h.hero_role)}
-        ${sectionHtml("SOUL HERO", h.soul_hero)}
-        ${secret}
-      </div>
+      <div class="d-right">${rightContent}</div>
     </div>
   </div>`;
 }
