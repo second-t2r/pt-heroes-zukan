@@ -47,13 +47,15 @@ function encImg(path, name) {
   return `<div class="ph" data-enc="${esc(path)}"><b>${esc(name)}</b><small>復号中…</small></div>`;
 }
 
+// タイル/詳細左の顔ポートレート。顔切り抜き(portrait_img)を優先し、無ければ元イラスト。
 function portrait(h) {
-  if (h.illustration) {
-    if (h.illustration.endsWith(".enc")) {
+  const src = h.portrait_img || h.illustration;
+  if (src) {
+    if (src.endsWith(".enc")) {
       // 復号は後追い（data-enc）。まずプレースホルダ。
-      return `<div class="ph" data-enc="${esc(h.illustration)}"><b>${esc(h.name)}</b><small>復号中…</small></div>`;
+      return `<div class="ph" data-enc="${esc(src)}"><b>${esc(h.name)}</b><small>復号中…</small></div>`;
     }
-    return `<img src="${esc(h.illustration)}" alt="${esc(h.name)}"
+    return `<img src="${esc(src)}" alt="${esc(h.name)}"
       onerror="this.parentNode.innerHTML='<div class=&quot;ph&quot;><b>${esc(h.name)}</b><small>イラスト未設定</small></div>'">`;
   }
   return `<div class="ph"><b>${esc(h.name)}</b><small>イラスト未設定</small></div>`;
@@ -77,13 +79,7 @@ async function hydrateImages(root) {
 function cardHtml(h, i) {
   const hex = colorHex(h.color);
   const rank = h.rank ? `<div class="rank"><span>${esc(h.rank)}</span></div>` : "";
-  // フルカード画像がある場合はそのまま掲載（トレカがタイルになる）
-  if (h.card) {
-    return `<article class="card card-full" style="--c:${hex}" data-slug="${esc(h.slug)}">
-      <div class="num">${no(i)}</div>
-      <div class="cardimg">${encImg(h.card, h.name)}</div>
-    </article>`;
-  }
+  // 一覧タイルは全ヒーロー共通スタイル（顔ポートレート＋メタ）。カード全体はクリック後に表示。
   return `<article class="card" style="--c:${hex}" data-slug="${esc(h.slug)}">
     <div class="num">${no(i)}</div>
     ${rank}
@@ -166,15 +162,24 @@ function detailHtml(h, i) {
         ${sectionHtml("HERO ROLE", h.hero_role)}
         ${sectionHtml("SOUL HERO", h.soul_hero)}
         ${secret}`;
-  // フルカード画像がある場合：左にカードをそのまま表示、右にステータス
+  // フルカード画像がある場合：左にカードそのまま表示、右はレーダー中心のステータスで占有
+  // （固有能力等はカード左側に載っているため、右はHERO STATUSに集中させる）
   if (h.card) {
+    const bigStatus = `<div class="d-status d-status-big">
+        ${h.stats5 ? `<div class="radar-wrap"><h4>◆ HERO STATUS</h4>${radarSvg(h.stats5)}</div>` : `<h4>◆ HERO STATUS</h4>`}
+        <div class="numbers">
+          <div class="n"><b>SPEED</b><div class="v">${esc(h.speed ?? "-")}</div></div>
+          <div class="n"><b>HP</b><div class="v">${esc(h.hp ?? "-")}</div></div>
+          <div class="n"><b>AI LOG</b><div class="v">${esc(h.ai_log || "-")}</div></div>
+        </div>
+      </div>`;
     return `<div class="detail detail-card" style="--c:${hex}">
       ${header}
       <div class="d-main">
         <div class="d-left d-left-card">
           <div class="d-cardimg">${encImg(h.card, h.name)}</div>
         </div>
-        <div class="d-right">${rightContent}</div>
+        <div class="d-right d-right-status">${bigStatus}</div>
       </div>
     </div>`;
   }

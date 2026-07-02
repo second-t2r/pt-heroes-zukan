@@ -280,9 +280,28 @@ body {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: #fff; font-weight: 800; text-align: center; padding: 12px;
 }
-.detail-card .d-right { overflow-y: auto; }
 /* カード版は右パネルを 60% 前後にするため本体を広げる */
 .modal-body:has(.detail-card) { width: min(1180px, 96vw); }
+
+/* カード版の右パネル＝HERO STATUS（レーダー＋数値）で占有 */
+.detail-card .d-right-status { display: flex; }
+.detail-card .d-status-big {
+  flex: 1 1 auto;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: clamp(16px, 4vh, 34px);
+  padding: 26px 22px;
+  border-bottom: none;
+}
+.detail-card .d-status-big .radar-wrap { width: 100%; }
+.detail-card .d-status-big .radar-wrap h4 { font-size: 16px; margin: 0 0 8px; }
+.detail-card .d-status-big .radar svg { max-width: min(360px, 80%); }
+.detail-card .d-status-big .numbers {
+  flex-direction: row; width: 100%; max-width: 560px; gap: 12px;
+}
+.detail-card .d-status-big .numbers .n { flex: 1 1 0; padding: 10px 8px; }
+.detail-card .d-status-big .numbers .n b { font-size: 11px; }
+.detail-card .d-status-big .numbers .n .v { font-size: 26px; line-height: 1.15; }
 .detail .d-top {
   position: relative;
   background: var(--c); color: #fff;
