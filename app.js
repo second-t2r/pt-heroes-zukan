@@ -42,6 +42,11 @@ function esc(s) {
 }
 function no(i) { return "No." + String(i + 1).padStart(3, "0"); }
 
+// 暗号化画像(.enc)のプレースホルダ（hydrateImagesが復号して差し込む）
+function encImg(path, name) {
+  return `<div class="ph" data-enc="${esc(path)}"><b>${esc(name)}</b><small>復号中…</small></div>`;
+}
+
 function portrait(h) {
   if (h.illustration) {
     if (h.illustration.endsWith(".enc")) {
@@ -72,6 +77,13 @@ async function hydrateImages(root) {
 function cardHtml(h, i) {
   const hex = colorHex(h.color);
   const rank = h.rank ? `<div class="rank"><span>${esc(h.rank)}</span></div>` : "";
+  // フルカード画像がある場合はそのまま掲載（トレカがタイルになる）
+  if (h.card) {
+    return `<article class="card card-full" style="--c:${hex}" data-slug="${esc(h.slug)}">
+      <div class="num">${no(i)}</div>
+      <div class="cardimg">${encImg(h.card, h.name)}</div>
+    </article>`;
+  }
   return `<article class="card" style="--c:${hex}" data-slug="${esc(h.slug)}">
     <div class="num">${no(i)}</div>
     ${rank}
@@ -141,6 +153,13 @@ function sectionHtml(label, obj) {
 
 function detailHtml(h, i) {
   const hex = colorHex(h.color);
+  // フルカード画像がある場合は、カードをそのまま大きく表示
+  if (h.card) {
+    return `<div class="detail detail-full" style="--c:${hex}">
+      <div class="d-num">${no(i)}</div>
+      <div class="d-cardimg">${encImg(h.card, h.name)}</div>
+    </div>`;
+  }
   const rankBadge = h.rank ? ` ／ RANK ${esc(h.rank)}` : "";
   const secret = h.secret_data ? `<div class="sec"><h4><span>SECRET DATA</span></h4><p>${esc(h.secret_data)}</p></div>` : "";
   return `<div class="detail" style="--c:${hex}">

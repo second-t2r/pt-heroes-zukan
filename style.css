@@ -161,6 +161,16 @@ body {
 }
 .card .rank span { -webkit-text-stroke: .5px var(--ink); }
 
+/* full-card tile（トレカ画像をそのまま掲載） */
+.card-full { background: #0d2823; align-self: start; }
+.card-full .cardimg { aspect-ratio: 1696 / 2528; overflow: hidden; }
+.card-full .cardimg img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.card-full .cardimg .ph {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; text-align: center; padding: 12px;
+}
+
 /* portrait panel */
 .card .portrait {
   position: relative;
@@ -250,6 +260,26 @@ body {
   background: var(--paper-2);
   border: 3px solid var(--ink);
   box-shadow: var(--hard-shadow);
+}
+
+/* フルカード画像の詳細表示（カードをそのまま大きく・1画面に収める） */
+.detail-full {
+  position: relative; background: #0d2823;
+  width: min(600px, 92vw, calc(86vh * 1696 / 2528));
+  margin: 0 auto;
+}
+.detail-full .d-num {
+  position: absolute; top: -3px; left: -3px; z-index: 2;
+  background: var(--ink); color: #fff;
+  font-size: 13px; font-weight: 800; letter-spacing: 1px;
+  padding: 4px 9px;
+}
+.detail-full .d-cardimg { aspect-ratio: 1696 / 2528; }
+.detail-full .d-cardimg img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.detail-full .d-cardimg .ph {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; text-align: center; padding: 12px;
 }
 .detail .d-top {
   position: relative;
