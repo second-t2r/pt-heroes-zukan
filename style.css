@@ -283,25 +283,42 @@ body {
 /* カード版は右パネルを 60% 前後にするため本体を広げる */
 .modal-body:has(.detail-card) { width: min(1180px, 96vw); }
 
-/* カード版の右パネル＝HERO STATUS（レーダー＋数値）で占有 */
+/* カード版の右パネル＝HERO STATUS（大きめレーダー＋数値）＋項目凡例 */
 .detail-card .d-right-status { display: flex; }
 .detail-card .d-status-big {
   flex: 1 1 auto;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: clamp(16px, 4vh, 34px);
-  padding: 26px 22px;
+  align-items: center; justify-content: flex-start;
+  gap: 14px;
+  padding: 20px 24px 16px;
   border-bottom: none;
 }
 .detail-card .d-status-big .radar-wrap { width: 100%; }
-.detail-card .d-status-big .radar-wrap h4 { font-size: 16px; margin: 0 0 8px; }
-.detail-card .d-status-big .radar svg { max-width: min(360px, 80%); }
+.detail-card .d-status-big .radar-wrap h4 { font-size: 16px; margin: 0 0 2px; }
+/* レーダーを従来の約2倍に */
+.detail-card .d-status-big .radar svg { max-width: min(500px, 92%); }
+/* 数値ボックスは横幅・文字はそのまま、縦を詰める（伸長を止める） */
 .detail-card .d-status-big .numbers {
-  flex-direction: row; width: 100%; max-width: 560px; gap: 12px;
+  flex: 0 0 auto; flex-direction: row; align-items: stretch;
+  width: 100%; max-width: 560px; gap: 12px;
 }
-.detail-card .d-status-big .numbers .n { flex: 1 1 0; padding: 10px 8px; }
+.detail-card .d-status-big .numbers .n { flex: 1 1 0; padding: 7px 8px; }
 .detail-card .d-status-big .numbers .n b { font-size: 11px; }
-.detail-card .d-status-big .numbers .n .v { font-size: 26px; line-height: 1.15; }
+.detail-card .d-status-big .numbers .n .v { font-size: 26px; line-height: 1.1; }
+
+/* 右パネル下部：項目そのものの解説（凡例） */
+.detail-card .d-glossary {
+  width: 100%; max-width: 560px; margin-top: auto; padding-top: 12px;
+  border-top: 2px dashed rgba(22,19,15,.3);
+}
+.detail-card .d-glossary .g-head {
+  font-size: 11px; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; opacity: .8;
+}
+.detail-card .d-glossary .g-row { display: flex; gap: 12px; padding: 3px 0; align-items: baseline; }
+.detail-card .d-glossary .g-label {
+  flex: 0 0 112px; font-size: 11px; font-weight: 900; letter-spacing: .5px; color: var(--c);
+}
+.detail-card .d-glossary .g-desc { font-size: 12.5px; line-height: 1.5; color: #3a352c; }
 .detail .d-top {
   position: relative;
   background: var(--c); color: #fff;

@@ -7,6 +7,14 @@ let PASSWORD = null; // 復号後、画像復号のために保持（sessionStor
 const $ = (s) => document.querySelector(s);
 const RANK_VAL = { A: 5, B: 4, C: 3, D: 2, E: 1 };
 
+// カード各項目の「見かた」を説明する凡例（ヒーロー個別の内容ではなく項目そのものの解説）
+const CARD_GLOSSARY = [
+  ["SUPER POWER", "その人ならではの強み。いちばんの武器。"],
+  ["HERO ROLE", "組織の中で担う役割・ポジション。"],
+  ["SOUL HERO", "生き方に共感する、憧れの人物。"],
+  ["SECRET DATA", "意外な素顔・裏話。"],
+];
+
 /* ---------- 復号ユーティリティ（Web Crypto / PBKDF2-SHA256 → AES-256-GCM） ---------- */
 function b64ToBytes(b64) {
   const bin = atob(b64);
@@ -165,6 +173,10 @@ function detailHtml(h, i) {
   // フルカード画像がある場合：左にカードそのまま表示、右はレーダー中心のステータスで占有
   // （固有能力等はカード左側に載っているため、右はHERO STATUSに集中させる）
   if (h.card) {
+    const glossary = `<div class="d-glossary">
+        <div class="g-head">◆ 項目の見かた</div>
+        ${CARD_GLOSSARY.map(([k, v]) => `<div class="g-row"><span class="g-label">${esc(k)}</span><span class="g-desc">${esc(v)}</span></div>`).join("")}
+      </div>`;
     const bigStatus = `<div class="d-status d-status-big">
         ${h.stats5 ? `<div class="radar-wrap"><h4>◆ HERO STATUS</h4>${radarSvg(h.stats5)}</div>` : `<h4>◆ HERO STATUS</h4>`}
         <div class="numbers">
@@ -172,6 +184,7 @@ function detailHtml(h, i) {
           <div class="n"><b>HP</b><div class="v">${esc(h.hp ?? "-")}</div></div>
           <div class="n"><b>AI LOG</b><div class="v">${esc(h.ai_log || "-")}</div></div>
         </div>
+        ${glossary}
       </div>`;
     return `<div class="detail detail-card" style="--c:${hex}">
       ${header}
