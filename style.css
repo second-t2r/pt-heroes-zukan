@@ -312,10 +312,9 @@ body {
 .detail-card .d-status-big .numbers .n b { font-size: 11px; }
 .detail-card .d-status-big .numbers .n .v { font-size: 26px; line-height: 1.1; }
 
-/* 右パネル下部：項目そのものの解説（凡例） */
+/* 右パネル：項目そのものの解説（凡例）。カード画像に中身が載るため右は凡例に集中。 */
 .detail-card .d-glossary {
-  width: 100%; max-width: 560px; margin-top: auto; padding-top: 12px;
-  border-top: 2px dashed rgba(22,19,15,.3);
+  width: 100%; max-width: 560px; padding-top: 4px;
 }
 .detail-card .d-glossary .g-head {
   font-size: 11px; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; opacity: .8;

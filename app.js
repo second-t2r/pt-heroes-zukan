@@ -5,12 +5,13 @@ let keyword = "";
 let PASSWORD = null; // 復号後、画像復号のために保持（sessionStorageに保存）
 
 const $ = (s) => document.querySelector(s);
-const RANK_VAL = { A: 5, B: 4, C: 3, D: 2, E: 1 };
 
 // カード各項目の「見かた」を説明する凡例（ヒーロー個別の内容ではなく項目そのものの解説）
+// 表示順はカードに合わせる：HERO ROLE → UNIQUE ABILITY → TARGET ENEMY → SOUL HERO → SECRET DATA
 const CARD_GLOSSARY = [
-  ["SUPER POWER", "その人ならではの強み。いちばんの武器。"],
   ["HERO ROLE", "組織の中で担う役割・ポジション。"],
+  ["UNIQUE ABILITY", "その人ならではの固有能力。いちばんの武器。"],
+  ["TARGET ENEMY", "立ち向かう相手・課題（宿敵）。"],
   ["SOUL HERO", "生き方に共感する、憧れの人物。"],
   ["SECRET DATA", "意外な素顔・裏話。"],
 ];
@@ -44,7 +45,6 @@ async function decryptImage(path) {
 /* ---------- 表示ヘルパ ---------- */
 function colorHex(color) { const c = DATA.meta.colors && DATA.meta.colors[color]; return c ? c.hex : "#17b978"; }
 function colorLabel(color) { const c = DATA.meta.colors && DATA.meta.colors[color]; return c ? c.label : color; }
-function statLabel(key) { const l = DATA.meta.stat_labels || {}; return l[key] || key; }
 function esc(s) {
   return String(s ?? "").replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
 }
@@ -86,66 +86,21 @@ async function hydrateImages(root) {
 
 function cardHtml(h, i) {
   const hex = colorHex(h.color);
-  const rank = h.rank ? `<div class="rank"><span>${esc(h.rank)}</span></div>` : "";
   // 一覧タイルは全ヒーロー共通スタイル（顔ポートレート＋メタ）。カード全体はクリック後に表示。
   return `<article class="card" style="--c:${hex}" data-slug="${esc(h.slug)}">
     <div class="num">${no(i)}</div>
-    ${rank}
     <div class="portrait">
       ${portrait(h)}
       <div class="field-tab">${esc(h.field || "")}</div>
     </div>
     <div class="meta">
       <p class="name">${esc(h.name)}<small>${esc(h.name_en || "")}</small></p>
-      <span class="code">${esc(h.code_name || "")}</span>
       <p class="catch">${esc(h.catchphrase || "")}</p>
       <div class="badges">
         <span class="badge" style="background:${hex};color:#fff">${esc(colorLabel(h.color))}</span>
-        <span class="badge">SPEED ${esc(h.speed ?? "-")}</span>
       </div>
     </div>
   </article>`;
-}
-
-function radarSvg(stats5) {
-  const keys = ["power", "speed", "technique", "intelligence", "cooperation"];
-  const cx = 100, cy = 94, R = 60;
-  const ang = (i) => (-90 + i * 72) * Math.PI / 180;
-  const pt = (i, r) => [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))];
-  let grid = "";
-  for (let lvl = 1; lvl <= 5; lvl++) {
-    const r = R * lvl / 5;
-    const p = keys.map((_, i) => pt(i, r).map((n) => n.toFixed(1)).join(",")).join(" ");
-    grid += `<polygon class="grid-line" points="${p}"/>`;
-  }
-  let axes = "";
-  keys.forEach((_, i) => { const [x, y] = pt(i, R); axes += `<line class="axis" x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; });
-  const shapePts = keys.map((k, i) => {
-    const v = RANK_VAL[String(stats5[k] || "E").toUpperCase()] || 1;
-    return pt(i, R * v / 5).map((n) => n.toFixed(1)).join(",");
-  }).join(" ");
-  let labels = "";
-  keys.forEach((k, i) => {
-    const [x, y] = pt(i, R + 13);
-    const rk = String(stats5[k] || "E").toUpperCase();
-    const anchor = Math.abs(x - cx) < 6 ? "middle" : (x > cx ? "start" : "end");
-    labels += `<text class="lab" x="${x.toFixed(1)}" y="${(y - 2).toFixed(1)}" text-anchor="${anchor}">${esc(statLabel(k))}</text>`;
-    labels += `<text class="rank-lab" x="${x.toFixed(1)}" y="${(y + 9).toFixed(1)}" text-anchor="${anchor}">${rk}</text>`;
-  });
-  // ラベルがはみ出さないよう左右・上下に余白を持たせた viewBox
-  return `<div class="radar"><svg viewBox="-32 -4 264 208" role="img" aria-label="ステータスレーダー">
-    ${grid}${axes}<polygon class="shape" points="${shapePts}"/>${labels}
-  </svg></div>`;
-}
-
-function statBlock(h) {
-  const numbers = `<div class="numbers">
-    <div class="n"><b>SPEED</b><div class="v">${esc(h.speed ?? "-")}</div></div>
-    <div class="n"><b>HP</b><div class="v">${esc(h.hp ?? "-")}</div></div>
-    <div class="n"><b>AI LOG</b><div class="v" style="font-size:12px">${esc(h.ai_log || "-")}</div></div>
-  </div>`;
-  if (h.stats5) return `<div class="radar-wrap"><h4>◆ HERO STATUS</h4>${radarSvg(h.stats5)}</div>${numbers}`;
-  return `<h4>◆ HERO STATUS</h4>${numbers}`;
 }
 
 function sectionHtml(label, obj) {
@@ -157,35 +112,30 @@ function sectionHtml(label, obj) {
 
 function detailHtml(h, i) {
   const hex = colorHex(h.color);
-  const rankBadge = h.rank ? ` ／ RANK ${esc(h.rank)}` : "";
   const secret = h.secret_data ? `<div class="sec"><h4><span>SECRET DATA</span></h4><p>${esc(h.secret_data)}</p></div>` : "";
+  // 宿敵（文字列・新規）。値があるときだけ描く。
+  const targetEnemy = h.target_enemy
+    ? `<div class="sec"><h4><span>TARGET ENEMY（宿敵）</span></h4><p>${esc(h.target_enemy)}</p></div>`
+    : "";
   const header = `<div class="d-top">
       <div class="d-num">${no(i)}</div>
-      <div class="d-field">[FIELD] ${esc(h.field || "")} — ${esc(colorLabel(h.color))}${rankBadge}</div>
+      <div class="d-field">[FIELD] ${esc(h.field || "")} — ${esc(colorLabel(h.color))}</div>
       <div class="d-name display">${esc(h.name)} <small>${esc(h.name_en || "")}</small></div>
-      <div class="d-code">CODE NAME : ${esc(h.code_name || "")}</div>
     </div>`;
-  const rightContent = `<div class="d-status">${statBlock(h)}</div>
-        ${sectionHtml("SUPER POWER（固有能力）", h.super_power)}
-        ${sectionHtml("HERO ROLE", h.hero_role)}
+  // セクション順：Hero Role → Unique Ability → Target Enemy → Soul Hero → Secret Data
+  const rightContent = `${sectionHtml("HERO ROLE", h.hero_role)}
+        ${sectionHtml("UNIQUE ABILITY（固有能力）", h.super_power)}
+        ${targetEnemy}
         ${sectionHtml("SOUL HERO", h.soul_hero)}
         ${secret}`;
-  // フルカード画像がある場合：左にカードそのまま表示、右はレーダー中心のステータスで占有
-  // （固有能力等はカード左側に載っているため、右はHERO STATUSに集中させる）
+  // フルカード画像がある場合：左にカードそのまま表示、右は「項目の見かた（凡例）」で占有
+  // （各項目の中身はカード画像に載っているため、右は凡例に集中させる）
   if (h.card) {
     const glossary = `<div class="d-glossary">
         <div class="g-head">◆ 項目の見かた</div>
         ${CARD_GLOSSARY.map(([k, v]) => `<div class="g-row"><span class="g-label">${esc(k)}</span><span class="g-desc">${esc(v)}</span></div>`).join("")}
       </div>`;
-    const bigStatus = `<div class="d-status d-status-big">
-        ${h.stats5 ? `<div class="radar-wrap"><h4>◆ HERO STATUS</h4>${radarSvg(h.stats5)}</div>` : `<h4>◆ HERO STATUS</h4>`}
-        <div class="numbers">
-          <div class="n"><b>SPEED</b><div class="v">${esc(h.speed ?? "-")}</div></div>
-          <div class="n"><b>HP</b><div class="v">${esc(h.hp ?? "-")}</div></div>
-          <div class="n"><b>AI LOG</b><div class="v">${esc(h.ai_log || "-")}</div></div>
-        </div>
-        ${glossary}
-      </div>`;
+    const bigStatus = `<div class="d-status-big">${glossary}</div>`;
     return `<div class="detail detail-card" style="--c:${hex}">
       ${header}
       <div class="d-main">
@@ -201,7 +151,6 @@ function detailHtml(h, i) {
     <div class="d-main">
       <div class="d-left">
         <div class="d-portrait">${portrait(h)}</div>
-        ${h.quote ? `<p class="d-quote">「${esc(h.quote)}」</p>` : ""}
       </div>
       <div class="d-right">${rightContent}</div>
     </div>
