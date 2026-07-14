@@ -236,6 +236,12 @@ body {
   font-weight: 700; font-size: 12px;
   border-top: 3px solid var(--ink);
 }
+.site-footer .admin-link {
+  color: var(--ink); opacity: .55; text-decoration: none;
+  border: 1px solid currentColor; border-radius: 999px; padding: 3px 12px;
+  letter-spacing: .5px; transition: opacity .15s;
+}
+.site-footer .admin-link:hover { opacity: 1; }
 
 /* ===== Modal / databook page ===== */
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 18px; }
