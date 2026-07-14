@@ -16,6 +16,76 @@ const CARD_GLOSSARY = [
   ["SECRET DATA", "意外な素顔・裏話。"],
 ];
 
+/* ---------- HERO STATUS（3軸レーダー：人事コンサル特化） ----------
+   カード（印刷物）には出さず、図鑑の詳細ビューだけに出す。
+   軸は「戦略設計→育成・伴走→組織実行」＝人事コンサルの提供価値の流れ。
+   ★軸の名前や見せ方を変えたいときは STAT3 だけ直す。 */
+const STAT3 = [
+  { key: "strategy", label: "戦略設計力", en: "STRATEGY" },
+  { key: "develop", label: "育成・伴走力", en: "DEVELOP" },
+  { key: "execute", label: "組織実行力", en: "EXECUTE" },
+];
+// 個別に想定した値（0–100）。データ（h.stats3）があればそちらを優先する。
+// 既存カードはカード内容から想像、多々良は実在の人物像に合わせて設定。
+const STAT3_BY_SLUG = {
+  "tatara-kazumitsu": { strategy: 95, develop: 78, execute: 90 },
+  "yoshimoto-riho": { strategy: 80, develop: 88, execute: 92 },
+  "sample-blue": { strategy: 92, develop: 62, execute: 70 },
+  "sample-red": { strategy: 68, develop: 95, execute: 78 },
+};
+// 属性色ごとの既定シェイプ（新規ヒーローで個別値もデータも無いとき用のフォールバック）。
+const STAT3_BY_COLOR = {
+  blue: { strategy: 90, develop: 60, execute: 72 },   // 制度系
+  red: { strategy: 66, develop: 92, execute: 76 },     // 育成系
+  green: { strategy: 78, develop: 82, execute: 88 },   // コーポレート
+  purple: { strategy: 80, develop: 84, execute: 82 },  // 組織開発
+  orange: { strategy: 76, develop: 86, execute: 74 },  // 採用支援
+  cyan: { strategy: 88, develop: 66, execute: 84 },    // HRテック
+  royal: { strategy: 92, develop: 74, execute: 88 },   // 経営・参謀
+};
+function clamp100(n) { n = Number(n); return isFinite(n) ? Math.max(0, Math.min(100, n)) : 0; }
+// 表示する3軸値を決める：データ（stats3）> 個別想定（slug）> 属性色フォールバック > 一律70。
+function stats3For(h) {
+  const src = (h.stats3 && typeof h.stats3 === "object") ? h.stats3
+    : STAT3_BY_SLUG[h.slug] || STAT3_BY_COLOR[h.color] || {};
+  const out = {};
+  STAT3.forEach((d) => { out[d.key] = clamp100(src[d.key] != null ? src[d.key] : 70); });
+  return out;
+}
+// 正三角形レーダー（頂点＝上・右下・左下）。値は頂点からの距離で表す。
+function radar3Svg(h) {
+  const s = stats3For(h);
+  const W = 300, H = 214, cx = 150, cy = 112, R = 72, LR = R + 18;
+  const ang = [-90, 30, 150].map((d) => (d * Math.PI) / 180); // 上・右下・左下
+  const pt = (i, r) => [cx + r * Math.cos(ang[i]), cy + r * Math.sin(ang[i])];
+  const fmt = (p) => p.map((n) => n.toFixed(1)).join(",");
+  let grid = "";
+  [0.25, 0.5, 0.75, 1].forEach((f) => {
+    grid += `<polygon class="grid-line" points="${ang.map((_, i) => fmt(pt(i, R * f))).join(" ")}"/>`;
+  });
+  let axes = "";
+  ang.forEach((_, i) => { const [x, y] = pt(i, R); axes += `<line class="axis" x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; });
+  const vals = STAT3.map((d) => clamp100(s[d.key]));
+  const shape = vals.map((v, i) => fmt(pt(i, (R * v) / 100))).join(" ");
+  const dots = vals.map((v, i) => { const [x, y] = pt(i, (R * v) / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="var(--ink)"/>`; }).join("");
+  let labs = "";
+  STAT3.forEach((d, i) => {
+    const [lx, ly] = pt(i, LR);
+    const anchor = i === 0 ? "middle" : i === 1 ? "start" : "end";
+    const dy = i === 0 ? -3 : 4;
+    labs += `<text class="lab" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anchor}">${esc(d.en)}</text>`;
+    labs += `<text class="rank-lab" x="${lx.toFixed(1)}" y="${(ly + dy + 15).toFixed(1)}" text-anchor="${anchor}">${vals[i]}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="HERO STATUS レーダーチャート">${grid}${axes}<polygon class="shape" points="${shape}"/>${dots}${labs}</svg>`;
+}
+// 詳細ビュー用のレーダーブロック（見出し＋SVG＋3軸の日本語ラベル）。
+function stat3Label(d) { return (DATA.meta.stat3_labels && DATA.meta.stat3_labels[d.key]) || d.label; }
+function radarBlock(h) {
+  const s = stats3For(h);
+  const legend = STAT3.map((d) => `<span class="rl-item"><b>${esc(stat3Label(d))}</b><i>${clamp100(s[d.key])}</i></span>`).join("");
+  return `<div class="radar-wrap"><h4>◆ HERO STATUS</h4><div class="radar">${radar3Svg(h)}</div><div class="radar-legend">${legend}</div></div>`;
+}
+
 /* ---------- 復号ユーティリティ（Web Crypto / PBKDF2-SHA256 → AES-256-GCM） ---------- */
 function b64ToBytes(b64) {
   const bin = atob(b64);
@@ -143,6 +213,7 @@ function detailHtml(h, i) {
         ${targetEnemy}
         ${sectionHtml("SOUL HERO", h.soul_hero)}
         ${secret}
+        ${radarBlock(h)}
         ${profileHtml(h)}`;
   // フルカード画像がある場合：左にカードそのまま表示、右は「項目の見かた（凡例）」で占有
   // （各項目の中身はカード画像に載っているため、右は凡例に集中させる）
@@ -151,7 +222,7 @@ function detailHtml(h, i) {
         <div class="g-head">◆ 項目の見かた</div>
         ${CARD_GLOSSARY.map(([k, v]) => `<div class="g-row"><span class="g-label">${esc(k)}</span><span class="g-desc">${esc(v)}</span></div>`).join("")}
       </div>`;
-    const bigStatus = `<div class="d-status-big">${glossary}${profileHtml(h)}</div>`;
+    const bigStatus = `<div class="d-status-big">${radarBlock(h)}${glossary}${profileHtml(h)}</div>`;
     return `<div class="detail detail-card" style="--c:${hex}">
       ${header}
       <div class="d-main">
