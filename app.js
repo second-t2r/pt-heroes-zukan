@@ -104,7 +104,8 @@ function cardHtml(h, i) {
 }
 
 function sectionHtml(label, obj) {
-  if (!obj) return "";
+  // 中身（name/desc）が両方空なら見出しごと出さない（不参加者・未入力でも空バッジを残さない）。
+  if (!obj || (!obj.name && !obj.desc)) return "";
   const name = obj.name ? `<div class="h-name">${esc(obj.name)}</div>` : "";
   const desc = obj.desc ? `<p>${esc(obj.desc)}</p>` : "";
   return `<div class="sec"><h4><span>${esc(label)}</span></h4>${name}${desc}</div>`;
