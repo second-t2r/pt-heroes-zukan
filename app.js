@@ -110,6 +110,20 @@ function sectionHtml(label, obj) {
   return `<div class="sec"><h4><span>${esc(label)}</span></h4>${name}${desc}</div>`;
 }
 
+// Phase 2: カードに載らないアンケート項目を詳細だけに展開する。
+// h.profile は「表示ラベル→値」の順序付きオブジェクト（項目名はデータ側が決める）。
+// 空・未設定なら何も出さない（不参加者・未回答でも崩れない）。
+function profileHtml(h) {
+  const p = h.profile;
+  if (!p || typeof p !== "object") return "";
+  const rows = Object.keys(p)
+    .filter((k) => String(p[k] ?? "").trim() !== "")
+    .map((k) => `<div class="pf-row"><dt>${esc(k)}</dt><dd>${esc(p[k])}</dd></div>`)
+    .join("");
+  if (!rows) return "";
+  return `<div class="d-profile"><h4>◆ アンケートから</h4><dl>${rows}</dl></div>`;
+}
+
 function detailHtml(h, i) {
   const hex = colorHex(h.color);
   const secret = h.secret_data ? `<div class="sec"><h4><span>SECRET DATA</span></h4><p>${esc(h.secret_data)}</p></div>` : "";
@@ -127,7 +141,8 @@ function detailHtml(h, i) {
         ${sectionHtml("UNIQUE ABILITY（固有能力）", h.super_power)}
         ${targetEnemy}
         ${sectionHtml("SOUL HERO", h.soul_hero)}
-        ${secret}`;
+        ${secret}
+        ${profileHtml(h)}`;
   // フルカード画像がある場合：左にカードそのまま表示、右は「項目の見かた（凡例）」で占有
   // （各項目の中身はカード画像に載っているため、右は凡例に集中させる）
   if (h.card) {
@@ -135,7 +150,7 @@ function detailHtml(h, i) {
         <div class="g-head">◆ 項目の見かた</div>
         ${CARD_GLOSSARY.map(([k, v]) => `<div class="g-row"><span class="g-label">${esc(k)}</span><span class="g-desc">${esc(v)}</span></div>`).join("")}
       </div>`;
-    const bigStatus = `<div class="d-status-big">${glossary}</div>`;
+    const bigStatus = `<div class="d-status-big">${glossary}${profileHtml(h)}</div>`;
     return `<div class="detail detail-card" style="--c:${hex}">
       ${header}
       <div class="d-main">
