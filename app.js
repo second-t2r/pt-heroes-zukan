@@ -104,12 +104,31 @@ async function decryptEnc(meta, pw) {
   const key = await deriveKey(pw, b64ToBytes(meta.salt), meta.iter);
   return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64ToBytes(meta.iv) }, key, b64ToBytes(meta.ct));
 }
-// 暗号化イラスト（.enc）を復号して blob URL を返す
-async function decryptImage(path) {
-  const meta = await fetch(path, { cache: "no-store" }).then((r) => r.json());
-  const buf = await decryptEnc(meta, PASSWORD);
-  const blob = new Blob([buf], { type: meta.mime || "image/png" });
-  return URL.createObjectURL(blob);
+// 暗号化イラスト（.enc）を復号して blob URL を返す。
+// セッション内キャッシュ：同じ .enc は1回だけ取得・復号し、以降は即返す（モーダル再オープンが即時）。
+const _imgCache = new Map(); // path -> Promise<blobURL>
+function decryptImage(path) {
+  const hit = _imgCache.get(path);
+  if (hit) return hit;
+  const p = (async () => {
+    const meta = await fetch(path, { cache: "no-store" }).then((r) => r.json());
+    const buf = await decryptEnc(meta, PASSWORD);
+    return URL.createObjectURL(new Blob([buf], { type: meta.mime || "image/png" }));
+  })();
+  _imgCache.set(path, p);
+  p.catch(() => _imgCache.delete(path)); // 失敗はキャッシュしない（次回再試行）
+  return p;
+}
+// グリッド表示後、カード/イラスト画像を背景で先読み復号しておく（クリック時に即表示）。
+function preloadImages() {
+  const set = new Set();
+  for (const h of (DATA.heroes || []))
+    for (const p of [h.card, h.illustration, h.portrait_img])
+      if (p && p.endsWith(".enc")) set.add(p);
+  const paths = [...set].filter((p) => !_imgCache.has(p));
+  let idx = 0;
+  const kick = () => { if (idx < paths.length) decryptImage(paths[idx++]).catch(() => {}).finally(kick); };
+  for (let i = 0; i < 3; i++) kick(); // 同時3本まで
 }
 
 /* ---------- 表示ヘルパ ---------- */
@@ -141,8 +160,9 @@ function portrait(h) {
 
 // 描画後、暗号化イラストを順次復号して差し込む
 async function hydrateImages(root) {
-  const nodes = (root || document).querySelectorAll(".ph[data-enc]");
-  for (const el of nodes) {
+  const nodes = [...(root || document).querySelectorAll(".ph[data-enc]")];
+  // 逐次ではなく並列で復号（複数タイルが同時に表示される）
+  await Promise.all(nodes.map(async (el) => {
     try {
       const url = await decryptImage(el.getAttribute("data-enc"));
       const img = new Image();
@@ -151,7 +171,7 @@ async function hydrateImages(root) {
     } catch (e) {
       el.innerHTML = "<b>復号エラー</b>";
     }
-  }
+  }));
 }
 
 function cardHtml(h, i) {
@@ -305,6 +325,7 @@ async function unlock(pw) {
   renderFilters();
   renderGrid();
   bindApp();
+  preloadImages(); // カード画像を背景で先読み → モーダルが即開く
 }
 
 function initGate() {
