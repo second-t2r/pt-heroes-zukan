@@ -26,28 +26,29 @@ const STATN = [
   { key: "labor",     label: "労務・実務", en: "LABOR" },
   { key: "corporate", label: "基盤・運用", en: "CORPORATE" },
   { key: "strategy",  label: "経営・戦略", en: "STRATEGY" },
+  { key: "branding",  label: "採用・広報", en: "OUTREACH" },
 ];
 // タイプ（属性色）ごとの得意・不得意プロファイル（0–100）。自分の領域でピークになるよう設計。
 const PROFILE_BY_COLOR = {
-  blue:   { system: 95, develop: 58, labor: 78, corporate: 74, strategy: 70 }, // 制度系
-  red:    { system: 56, develop: 95, labor: 60, corporate: 70, strategy: 62 }, // 育成系
-  green:  { system: 74, develop: 78, labor: 84, corporate: 93, strategy: 70 }, // コーポレート
-  royal:  { system: 82, develop: 68, labor: 66, corporate: 78, strategy: 95 }, // 経営・参謀
-  cyan:   { system: 72, develop: 56, labor: 95, corporate: 82, strategy: 60 }, // 労務系（HRテック枠を労務に）
-  purple: { system: 72, develop: 88, labor: 64, corporate: 82, strategy: 76 }, // 組織開発
-  orange: { system: 60, develop: 82, labor: 66, corporate: 72, strategy: 64 }, // 採用支援
+  blue:   { system: 95, develop: 58, labor: 78, corporate: 74, strategy: 70, branding: 55 }, // 制度系
+  red:    { system: 56, develop: 95, labor: 60, corporate: 70, strategy: 62, branding: 66 }, // 育成系
+  green:  { system: 74, develop: 78, labor: 84, corporate: 93, strategy: 70, branding: 72 }, // コーポレート
+  royal:  { system: 82, develop: 68, labor: 66, corporate: 78, strategy: 95, branding: 70 }, // 経営・参謀
+  cyan:   { system: 72, develop: 56, labor: 95, corporate: 82, strategy: 60, branding: 54 }, // 労務系（HRテック枠を労務に）
+  purple: { system: 72, develop: 88, labor: 64, corporate: 82, strategy: 76, branding: 74 }, // 組織開発
+  orange: { system: 60, develop: 76, labor: 66, corporate: 72, strategy: 64, branding: 94 }, // 採用支援（採用・広報がピーク）
 };
 // 労務系は色が未定義でも domain/field のキーワードで判定してこのプロファイルに寄せる。
-const PROFILE_LABOR = { system: 70, develop: 54, labor: 96, corporate: 80, strategy: 58 };
+const PROFILE_LABOR = { system: 70, develop: 54, labor: 96, corporate: 80, strategy: 58, branding: 52 };
 const LABOR_RE = /労務|勤怠|給与|就業|社会保険|オペレーション|オペサポ|実務|手続/;
 // 個別ヒーローの想定値（あれば最優先）。カード内容・人物像から設定。
 const STATN_BY_SLUG = {
-  "tatara-kazumitsu":   { system: 88, develop: 72, labor: 70, corporate: 80, strategy: 97 },
-  "tatara-tateito-coo": { system: 74, develop: 70, labor: 78, corporate: 72, strategy: 88 },
-  "yoshimoto-riho":     { system: 76, develop: 80, labor: 84, corporate: 93, strategy: 72 },
-  "tanaka-rie":         { system: 72, develop: 82, labor: 86, corporate: 90, strategy: 68 },
-  "sample-blue":        { system: 96, develop: 60, labor: 78, corporate: 74, strategy: 72 },
-  "sample-red":         { system: 58, develop: 96, labor: 62, corporate: 72, strategy: 60 },
+  "tatara-kazumitsu":   { system: 88, develop: 72, labor: 70, corporate: 80, strategy: 97, branding: 74 },
+  "tatara-tateito-coo": { system: 74, develop: 70, labor: 78, corporate: 72, strategy: 88, branding: 70 },
+  "yoshimoto-riho":     { system: 76, develop: 80, labor: 84, corporate: 93, strategy: 72, branding: 72 },
+  "tanaka-rie":         { system: 72, develop: 82, labor: 86, corporate: 90, strategy: 68, branding: 70 },
+  "sample-blue":        { system: 96, develop: 60, labor: 78, corporate: 74, strategy: 72, branding: 56 },
+  "sample-red":         { system: 58, develop: 96, labor: 62, corporate: 72, strategy: 60, branding: 66 },
 };
 function clamp100(n) { n = Number(n); return isFinite(n) ? Math.max(0, Math.min(100, n)) : 0; }
 // プロファイル決定：データ（statsN）> 個別想定（slug）> 労務キーワード > 属性色 > 空。
@@ -102,9 +103,9 @@ function radarBlock(h) {
 // ヒーローパワー（総合力）＝5軸合計をもとにした戦闘力＋総合ランク。レーダーとは別立て。
 function heroPower(h) {
   const s = statsNFor(h);
-  const sum = STATN.reduce((a, d) => a + clamp100(s[d.key]), 0); // 0–500
-  const avg = sum / STATN.length;                                 // 0–100
-  return { power: Math.round(sum * 20), avg: Math.round(avg),      // power: 0–10000（戦闘力風）
+  const sum = STATN.reduce((a, d) => a + clamp100(s[d.key]), 0);
+  const avg = sum / STATN.length;                                 // 0–100（軸数に依らない）
+  return { power: Math.round(avg * 100), avg: Math.round(avg),     // power: 0–10000（戦闘力風）
     rank: avg >= 88 ? "S" : avg >= 80 ? "A" : avg >= 72 ? "B" : avg >= 64 ? "C" : "D" };
 }
 function heroPowerBlock(h) {
