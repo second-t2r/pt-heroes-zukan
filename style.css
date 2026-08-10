@@ -215,25 +215,13 @@ body {
   pointer-events: none;
 }
 .card .portrait img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; object-position: center; }
-/* 顔切り抜きが無く、完成カード画像しか無い人（Excel一括取り込み組）。
-   カードの絵の窓だけを拡大して顔・上半身をタイルに出す。
-   実測（738×1100のカード）：絵の窓は上から約10%〜50%。うち顔〜胸は 10.5%〜38%。
-   タイルは 3/4（縦長）なので、その帯を高さ基準で合わせ、左右は中央を残して切る。
-   ★寄りすぎ・引きすぎを直すときは下の3つの数値だけを触る。
-     --card-zoom : カード幅をタイル幅の何倍で描くか（大きいほど寄る）
-     --card-left : 横中央に置くための左オフセット ＝ (100% - zoom) / 2
-     --card-top  : 絵の窓の上端をタイル上端に合わせる縦オフセット */
-.card .portrait img.from-card {
-  --card-zoom: 300%;   /* カード高の 10.5%〜40.3% がタイルに出る */
-  --card-left: -100%;  /* (100% - 300%) / 2 */
-  --card-top: -35.2%;
-  position: absolute;
-  width: var(--card-zoom);
-  height: auto;
-  left: var(--card-left);
-  top: var(--card-top);
-  object-fit: unset;
-}
+/* タイルの顔の見せ方は app.js の fitTileImage が実寸を測って決める。ここは受け皿。
+   fit-card    完成カードの絵の窓を拡大（width/left/top は JS が画素数に合わせて入れる）
+   fit-cover   横長イラスト・正方形の絵を上寄りで覆う
+   fit-contain 拡大に耐えない小さい画像。水増しせずカード全体を出す */
+.card .portrait img.fit-card { position: absolute; height: auto; object-fit: unset; }
+.card .portrait img.fit-cover { object-fit: cover; object-position: center 28%; }
+.card .portrait img.fit-contain { object-fit: contain; }
 .card .portrait .ph {
   position: relative; z-index: 2; text-align: center; padding: 14px;
   color: #fff; -webkit-text-stroke: .4px var(--ink);

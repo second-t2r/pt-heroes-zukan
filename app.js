@@ -106,12 +106,17 @@ function decryptImage(path) {
   p.catch(() => _imgCache.delete(path)); // 失敗はキャッシュしない（次回再試行）
   return p;
 }
-// グリッド表示後、カード/イラスト画像を背景で先読み復号しておく（クリック時に即表示）。
+// グリッド表示後、画像を背景で先読み復号しておく（クリック時に即表示）。
+// 人数が増えたので全部は先読みしない：一覧タイルの絵は全員ぶん、詳細のカードは先頭の数名だけ。
+// 残りのカードはモーダルを開いた時に復号する（1回目だけ待ちが出て、以後はキャッシュされる）。
+const PRELOAD_CARDS = 12;
 function preloadImages() {
   const set = new Set();
-  for (const h of (DATA.heroes || []))
-    for (const p of [h.card, h.illustration, h.portrait_img])
-      if (p && p.endsWith(".enc")) set.add(p);
+  (DATA.heroes || []).forEach((h, i) => {
+    const tile = h.portrait_img || h.illustration || h.card; // タイルに出る1枚
+    if (tile && tile.endsWith(".enc")) set.add(tile);
+    if (i < PRELOAD_CARDS && h.card && h.card.endsWith(".enc")) set.add(h.card);
+  });
   const paths = [...set].filter((p) => !_imgCache.has(p));
   let idx = 0;
   const kick = () => { if (idx < paths.length) decryptImage(paths[idx++]).catch(() => {}).finally(kick); };
@@ -132,19 +137,49 @@ function encImg(path, name) {
 }
 
 // タイル/詳細左の顔ポートレート。顔切り抜き(portrait_img) > 元イラスト > カード画像の順に使う。
-// カード画像しか無い人（Excel一括取り込み組）は、カードの上寄りを切り出して顔を見せる（.from-card）。
-function portrait(h) {
+// 切り出し方は復号後に実寸を測って決める（fitTileImage）。枠と中身がずれていても崩れない。
+// tile=true のときは、復号後に実寸を測って切り出し方を決める（fitTileImage）。
+function portrait(h, tile) {
   const src = h.portrait_img || h.illustration || h.card;
-  const fromCard = !h.portrait_img && !h.illustration && h.card ? " from-card" : "";
+  const tileAttr = tile ? " data-tile" : "";
   if (src) {
     if (src.endsWith(".enc")) {
       // 復号は後追い（data-enc）。まずプレースホルダ。
-      return `<div class="ph${fromCard}" data-enc="${esc(src)}"><b>${esc(h.name)}</b><small>復号中…</small></div>`;
+      return `<div class="ph" data-enc="${esc(src)}"${tileAttr}><b>${esc(h.name)}</b><small>復号中…</small></div>`;
     }
-    return `<img class="${fromCard.trim()}" src="${esc(src)}" alt="${esc(h.name)}"
+    return `<img src="${esc(src)}" alt="${esc(h.name)}"${tile ? ' onload="fitTileImage(this)"' : ""}
       onerror="this.parentNode.innerHTML='<div class=&quot;ph&quot;><b>${esc(h.name)}</b><small>イラスト未設定</small></div>'">`;
   }
   return `<div class="ph"><b>${esc(h.name)}</b><small>イラスト未設定</small></div>`;
+}
+
+/* 一覧タイルの顔切り出し。
+   完成カードは絵の窓（カード高の約10.5%〜）だけを拡大して顔を見せるが、
+   元画像が小さいまま拡大すると水増しになってぼける。
+   そこで元画像の画素数で許される倍率までしか拡大しない。足りなければ切り出しをやめ、
+   カード全体を等倍以下で出す（ぼけるくらいなら小さく写すほうがまし）。 */
+const TILE_W = 280;      // タイルの実効幅の目安（px）
+const CARD_ART_TOP = 0.105; // カード上端から絵の窓の上端までの割合（実測）
+const TILE_ASPECT = 0.75;   // タイルの縦横比（3/4）
+
+function fitTileImage(img) {
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (!w || !h) return;
+  const a = w / h;
+  // 顔切り抜き（実測0.75＝タイルと同じ比）・横長イラスト（0.73〜1.75）は、そのまま覆えばよい。
+  // 完成カードだけが 0.671 と細く、絵の窓を切り出す必要がある。境目は 0.72。
+  if (a >= 0.72) { img.className = "fit-cover"; return; }
+
+  // 縦長＝完成カード。顔で切るか、カード全体を出すかの二択にする。
+  // 中途半端な倍率だと絵の窓と本文が半端に写って締まらないため、寄り切れないなら寄らない。
+  const need = TILE_W * Math.min(window.devicePixelRatio || 1, 2);
+  const maxZoom = w / need;
+  if (maxZoom < 2.2) { img.className = "fit-contain"; return; } // 顔で切るには画素が足りない → カード全体
+  const zoom = Math.min(3, maxZoom);
+  img.className = "fit-card";
+  img.style.width = (zoom * 100).toFixed(1) + "%";
+  img.style.left = ((1 - zoom) / 2 * 100).toFixed(1) + "%";
+  img.style.top = (-CARD_ART_TOP * zoom * TILE_ASPECT / a * 100).toFixed(1) + "%";
 }
 
 // 描画後、暗号化イラストを順次復号して差し込む
@@ -155,10 +190,13 @@ async function hydrateImages(root) {
     try {
       const url = await decryptImage(el.getAttribute("data-enc"));
       const img = new Image();
-      img.src = url; img.alt = "";
-      // カード画像を顔タイルとして使う場合の切り出し指定を引き継ぐ
-      if (el.classList.contains("from-card")) img.className = "from-card";
+      img.alt = "";
+      // タイルの顔枠に入る画像だけ、実寸を測ってから切り出し方を決める
+      const isTile = el.hasAttribute("data-tile");
+      if (isTile) img.onload = () => fitTileImage(img);
+      img.src = url;
       el.replaceWith(img);
+      if (isTile && img.complete) fitTileImage(img); // キャッシュ済みで onload が来ない場合
     } catch (e) {
       el.innerHTML = "<b>復号エラー</b>";
     }
@@ -171,7 +209,7 @@ function cardHtml(h, i) {
   return `<article class="card" style="--c:${hex}" data-slug="${esc(h.slug)}">
     <div class="num">${no(i)}</div>
     <div class="portrait">
-      ${portrait(h)}
+      ${portrait(h, true)}
       <div class="field-tab">${esc(h.field || "")}</div>
     </div>
     <div class="meta">
