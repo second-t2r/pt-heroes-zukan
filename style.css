@@ -118,6 +118,23 @@ body {
   box-shadow: 2px 2px 0 rgba(22,19,15,.85);
 }
 .search::placeholder { color: #8a8172; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* 領域（FIELD）での絞り込み。人数が増えて属性色だけでは絞れないため別軸で置く。 */
+.field-filter {
+  background: #fff; border: 2.5px solid var(--ink); color: var(--ink);
+  font-family: inherit; font-weight: 800; font-size: 13px;
+  padding: 8px 10px; max-width: 260px; cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(22,19,15,.85);
+}
+.field-filter[hidden] { display: none; }
+/* 表示言語の切替。カード画像は日本語で焼き込み済みなので、切り替わるのは文字情報だけ。 */
+.lang-toggle { display: inline-flex; border: 2.5px solid var(--ink); box-shadow: 2px 2px 0 rgba(22,19,15,.85); background: #fff; }
+.lang-toggle button {
+  background: transparent; border: 0; color: var(--ink); cursor: pointer;
+  font-family: inherit; font-weight: 900; font-size: 12px; letter-spacing: 1px; padding: 8px 12px;
+}
+.lang-toggle button + button { border-left: 2.5px solid var(--ink); }
+.lang-toggle button.on { background: var(--ink); color: #fff; }
 
 /* ===== Grid ===== */
 .grid {
@@ -198,6 +215,25 @@ body {
   pointer-events: none;
 }
 .card .portrait img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+/* 顔切り抜きが無く、完成カード画像しか無い人（Excel一括取り込み組）。
+   カードの絵の窓だけを拡大して顔・上半身をタイルに出す。
+   実測（738×1100のカード）：絵の窓は上から約10%〜50%。うち顔〜胸は 10.5%〜38%。
+   タイルは 3/4（縦長）なので、その帯を高さ基準で合わせ、左右は中央を残して切る。
+   ★寄りすぎ・引きすぎを直すときは下の3つの数値だけを触る。
+     --card-zoom : カード幅をタイル幅の何倍で描くか（大きいほど寄る）
+     --card-left : 横中央に置くための左オフセット ＝ (100% - zoom) / 2
+     --card-top  : 絵の窓の上端をタイル上端に合わせる縦オフセット */
+.card .portrait img.from-card {
+  --card-zoom: 300%;   /* カード高の 10.5%〜40.3% がタイルに出る */
+  --card-left: -100%;  /* (100% - 300%) / 2 */
+  --card-top: -35.2%;
+  position: absolute;
+  width: var(--card-zoom);
+  height: auto;
+  left: var(--card-left);
+  top: var(--card-top);
+  object-fit: unset;
+}
 .card .portrait .ph {
   position: relative; z-index: 2; text-align: center; padding: 14px;
   color: #fff; -webkit-text-stroke: .4px var(--ink);
@@ -269,12 +305,14 @@ body {
 }
 
 /* フルカード画像の詳細表示（左＝カードそのまま／右＝ステータス。縦幅はカードに合わせる） */
+/* 右カラムが長いとき（EN表示＝英文の全文を出す）にカードが上下中央へ浮かないよう上端に固定する */
 .detail.detail-card .d-left-card {
   flex: 0 0 auto;
   background: #0d2823;
-  align-items: center; justify-content: center;
+  align-items: center; justify-content: flex-start;
   padding: 12px;
 }
+.detail-card .d-left-card .d-cardimg { position: sticky; top: 12px; }
 .detail-card .d-cardimg {
   aspect-ratio: 1696 / 2528;
   height: min(72vh, 720px);
@@ -289,28 +327,20 @@ body {
 /* カード版は右パネルを 60% 前後にするため本体を広げる */
 .modal-body:has(.detail-card) { width: min(1180px, 96vw); }
 
-/* カード版の右パネル＝HERO STATUS（大きめレーダー＋数値）＋項目凡例 */
+/* カード版の右パネル＝図鑑だけの項目（専門領域・得意戦術・AI装備）＋項目凡例 */
 .detail-card .d-right-status { display: flex; }
-.detail-card .d-status-big {
+.detail-card .d-side {
   flex: 1 1 auto;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-start;
+  align-items: flex-start; justify-content: flex-start;
   gap: 14px;
   padding: 20px 24px 16px;
   border-bottom: none;
 }
-.detail-card .d-status-big .radar-wrap { width: 100%; }
-.detail-card .d-status-big .radar-wrap h4 { font-size: 16px; margin: 0 0 2px; }
-/* レーダーを従来の約2倍に */
-.detail-card .d-status-big .radar svg { max-width: min(500px, 92%); }
-/* 数値ボックスは横幅・文字はそのまま、縦を詰める（伸長を止める） */
-.detail-card .d-status-big .numbers {
-  flex: 0 0 auto; flex-direction: row; align-items: stretch;
-  width: 100%; max-width: 560px; gap: 12px;
-}
-.detail-card .d-status-big .numbers .n { flex: 1 1 0; padding: 7px 8px; }
-.detail-card .d-status-big .numbers .n b { font-size: 11px; }
-.detail-card .d-status-big .numbers .n .v { font-size: 26px; line-height: 1.1; }
+.detail-card .d-side > * { width: 100%; max-width: 620px; }
+/* EN表示ではカード本文（日本語で焼き込み済み）の英訳を右に出す */
+.detail-card .d-side .sec { padding: 0 0 10px; border-bottom: 2px solid rgba(22,19,15,.18); }
+.detail-card .d-side .sec:last-child { border-bottom: none; }
 
 /* 右パネル：項目そのものの解説（凡例）。カード画像に中身が載るため右は凡例に集中。 */
 .detail-card .d-glossary {
@@ -370,18 +400,10 @@ body {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 14px; border-bottom: 2px solid rgba(22,19,15,.25);
 }
-.radar-wrap { text-align: center; flex: 0 0 auto; }
-.radar-wrap h4, .d-status > h4 { margin: 0 0 4px; font-size: 12px; font-weight: 900; letter-spacing: 1px; }
-.numbers { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; }
-.numbers .n {
-  border: 2.5px solid var(--ink); background: #fff; padding: 5px 12px; text-align: center;
-}
-.numbers .n b { display: block; font-size: 10px; letter-spacing: 1px; }
-.numbers .n .v { font-size: 20px; font-weight: 900; }
 
 /* Phase 2: 「◆ アンケートから」— 詳細だけに出すアンケート展開（表示ラベル→値） */
 .detail .d-profile { padding: 12px 16px; border-top: 2px dashed rgba(22,19,15,.3); }
-.detail-card .d-status-big .d-profile {
+.detail-card .d-side .d-profile {
   width: 100%; max-width: 560px; margin-top: 12px; padding: 12px 0 0;
 }
 .d-profile h4 { margin: 0 0 8px; font-size: 12px; font-weight: 900; letter-spacing: 1px; }
@@ -406,56 +428,25 @@ body {
 .detail .sec .h-name { font-weight: 900; font-size: 15px; margin-bottom: 3px; }
 .detail .sec p { margin: 0; font-size: 13.5px; line-height: 1.6; color: #33302a; }
 
-/* radar svg */
-.radar svg { width: 100%; max-width: 200px; height: auto; }
-.radar .grid-line { fill: none; stroke: rgba(22,19,15,.28); stroke-width: 1; }
-.radar .axis { stroke: rgba(22,19,15,.4); stroke-width: 1; }
-.radar .shape { fill: color-mix(in srgb, var(--c) 45%, transparent); stroke: var(--ink); stroke-width: 2.5; }
-.radar .lab { font-size: 12px; font-weight: 800; fill: var(--ink); }
-.radar .rank-lab { font-size: 13px; font-weight: 900; fill: var(--c); }
+/* ===== 図鑑だけに出す項目（専門領域・得意戦術・AI装備） =====
+   カードには刷られていない情報。カード画像の右、または本文の下に並べる。 */
+.d-zk { padding: 10px 16px; border-bottom: 2px solid rgba(22,19,15,.22); }
+.d-zk:last-child { border-bottom: none; }
+.detail-card .d-side .d-zk { padding: 0 0 12px; }
+.d-zk h4 { margin: 0 0 7px; font-size: 12px; font-weight: 900; letter-spacing: 1px; color: var(--c); }
+.d-zk p { margin: 0; font-size: 13.5px; line-height: 1.6; color: #33302a; }
+.d-zk .zk-name { font-weight: 900; font-size: 15px; margin-bottom: 3px; }
+.zk-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.zk-tag {
+  background: #fff; border: 2px solid var(--ink); color: var(--ink);
+  font-size: 12px; font-weight: 800; padding: 3px 9px;
+  box-shadow: 2px 2px 0 rgba(22,19,15,.85);
+}
 
-/* 3軸レーダーの日本語凡例（軸名＋数値）。カード版・ポートレート版で共通。 */
-.radar-legend {
-  display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;
-  margin-top: 8px;
-}
-.radar-legend .rl-item {
-  display: inline-flex; align-items: baseline; gap: 6px;
-  border: 2px solid var(--ink); background: #fff; padding: 3px 10px;
-}
-.radar-legend .rl-item b { font-size: 11.5px; font-weight: 900; }
-.radar-legend .rl-item i { font-style: normal; font-size: 16px; font-weight: 900; color: var(--c); }
-
-/* ポートレート版（カード画像なし）の右カラムに出すレーダーは、他セクションと同じ枠で区切る。 */
-.detail .d-right > .radar-wrap {
-  padding: 12px 16px; border-bottom: 2px solid rgba(22,19,15,.22);
-}
-.detail .d-right > .radar-wrap:last-child { border-bottom: none; }
-.detail .d-right > .radar-wrap h4 { text-align: left; }
-
-/* ヒーローパワー（総合力）＝レーダーとは別立ての戦闘力表示 */
-.hp-wrap { text-align: left; margin: 8px 0; }
-.hp-wrap h4 { margin: 0 0 6px; font-size: 12px; font-weight: 900; letter-spacing: 1px; }
-.hp-body { display: flex; align-items: center; gap: 12px; }
-.hp-num { display: flex; align-items: baseline; gap: 4px; line-height: 1; }
-.hp-value { font-size: 40px; font-weight: 900; color: var(--c); letter-spacing: 1px; }
-.hp-unit { font-size: 14px; font-weight: 800; color: #6b6357; }
-.hp-rank {
-  margin-left: auto; min-width: 44px; height: 44px; padding: 0 8px;
-  display: grid; place-items: center; font-size: 26px; font-weight: 900;
-  color: #fff; background: var(--c); border: 2px solid var(--ink); border-radius: 10px;
-  box-shadow: 0 2px 0 rgba(0,0,0,.25);
-}
-.hp-gauge {
-  margin-top: 8px; height: 12px; border-radius: 7px;
-  background: rgba(22,19,15,.12); border: 1.5px solid rgba(22,19,15,.35); overflow: hidden;
-}
-.hp-gauge > span { display: block; height: 100%; background: var(--c); }
-.detail-card .d-status-big .hp-wrap h4 { font-size: 16px; }
-.detail-card .d-status-big .hp-value { font-size: 46px; }
-/* ポートレート版の右カラムでも他セクションと同じ枠で区切る */
-.detail .d-right > .hp-wrap {
-  padding: 12px 16px; border-bottom: 2px solid rgba(22,19,15,.22);
+/* 詳細ヘッダのキャッチコピー */
+.detail .d-catch {
+  margin: 4px 0 0; font-size: 13px; font-weight: 700; line-height: 1.5;
+  color: #fff; opacity: .95; text-shadow: 0 1px 0 rgba(22,19,15,.35);
 }
 
 @media (max-width: 760px) {

@@ -31,7 +31,14 @@
 
   <nav class="toolbar">
     <div class="filters" id="filters"><!-- 属性チップを動的生成 --></div>
-    <input type="search" id="search" class="search" placeholder="名前・コードネームで検索" aria-label="検索">
+    <div class="tools">
+      <select id="fieldFilter" class="field-filter" aria-label="領域で絞り込む"><!-- FIELDを動的生成 --></select>
+      <input type="search" id="search" class="search" placeholder="名前・領域・専門で検索" aria-label="検索">
+      <div class="lang-toggle" id="langToggle" role="group" aria-label="表示言語">
+        <button type="button" data-lang="ja" class="on">JA</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
   </nav>
 
   <main>

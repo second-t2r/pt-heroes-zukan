@@ -1,124 +1,77 @@
 // PT HEROES 図鑑 — コミック/データブック調 + パスワード復号
 let DATA = { meta: {}, heroes: [] };
 let activeColor = "all";
+let activeField = "all";
 let keyword = "";
+let LANG = "ja";     // "ja" | "en"。カード画像は日本語で焼き込み済みなので、切り替わるのは文字情報だけ。
 let PASSWORD = null; // 復号後、画像復号のために保持（sessionStorageに保存）
 
 const $ = (s) => document.querySelector(s);
 
+/* ---------- 表示言語 ----------
+   Excel由来の英訳は hero.en に入っている（catchphrase / mastery / tactics / hero_role /
+   super_power / target_enemy / ai_equipment / soul_hero / secret_data）。
+   英訳が無い項目は日本語のまま出す（歯抜けで空欄にしない）。 */
+const T = {
+  ja: {
+    role: "HERO ROLE（ヒーローの特徴）", ability: "UNIQUE ABILITY（固有能力）",
+    enemy: "TARGET ENEMY（宿敵）", soul: "SOUL HERO（ソウルヒーロー）", secret: "SECRET DATA",
+    mastery: "◆ 専門領域（Mastery）", tactics: "◆ 得意戦術（Tactics）", ai: "◆ AI装備",
+    glossary: "◆ 項目の見かた", survey: "◆ アンケートから",
+    allField: "すべての領域", count: (t, n) => `全 ${t} 名中 ${n} 名を表示`,
+  },
+  en: {
+    role: "HERO ROLE", ability: "UNIQUE ABILITY",
+    enemy: "TARGET ENEMY", soul: "SOUL HERO", secret: "SECRET DATA",
+    mastery: "◆ MASTERY", tactics: "◆ TACTICS", ai: "◆ AI EQUIPMENT",
+    glossary: "◆ HOW TO READ", survey: "◆ FROM THE SURVEY",
+    allField: "All fields", count: (t, n) => `Showing ${n} of ${t}`,
+  },
+};
+const t = (k) => T[LANG][k];
+
+// 「レジリエント・ストラクチャー（複雑に…）」「Root Cause Detection (a vibration that…)」→ {name, desc}
+// 末尾が閉じ括弧で、名前部が短く句点を含まないときだけ分割する。それ以外は説明文として扱う。
+function splitNamed(s) {
+  const v = String(s ?? "").trim();
+  if (!v) return null;
+  const m = v.match(/^([^（(]{1,60}?)[（(]([\s\S]*)[）)]$/);
+  if (!m) return { desc: v };
+  const name = m[1].trim();
+  if (!name || /[。.]$/.test(name)) return { desc: v };
+  return { name, desc: m[2].trim() };
+}
+// 文字列項目を今の言語で取り出す
+function tx(h, key) {
+  if (LANG === "en") { const v = (h.en || {})[key]; if (v) return v; }
+  return h[key] || "";
+}
+// 「見出し＋説明」項目を今の言語で取り出す（英訳は1本の文字列なので分割する）
+function txSec(h, key) {
+  if (LANG === "en") { const v = (h.en || {})[key]; if (v) return splitNamed(v); }
+  const o = h[key];
+  if (typeof o === "string") return splitNamed(o);
+  return o || null;
+}
+
 // カード各項目の「見かた」を説明する凡例（ヒーロー個別の内容ではなく項目そのものの解説）
 // 表示順はカードに合わせる：HERO ROLE → UNIQUE ABILITY → TARGET ENEMY → SOUL HERO → SECRET DATA
-const CARD_GLOSSARY = [
-  ["HERO ROLE", "組織の中で担う役割・ポジション。"],
-  ["UNIQUE ABILITY", "その人ならではの固有能力。いちばんの武器。"],
-  ["TARGET ENEMY", "立ち向かう相手・課題（宿敵）。"],
-  ["SOUL HERO", "生き方に共感する、憧れの人物。"],
-  ["SECRET DATA", "意外な素顔・裏話。"],
-];
-
-/* ---------- タイプ特性レーダー（5軸・エニアグラム的）＋ ヒーローパワー ----------
-   カード（印刷物）には出さず、図鑑の詳細ポップアップ右側だけに出す。
-   5軸＝人事の5領域。各タイプ（属性）が自分の領域で高く、遠い領域で低い＝得意・不得意が一目で分かる。
-   ★軸・値を変えたいときは STATN / PROFILE_BY_COLOR / STATN_BY_SLUG を直す。 */
-const STATN = [
-  { key: "system",    label: "制度設計",   en: "SYSTEM" },
-  { key: "develop",   label: "育成・伴走", en: "DEVELOP" },
-  { key: "labor",     label: "労務・実務", en: "LABOR" },
-  { key: "corporate", label: "基盤・運用", en: "CORPORATE" },
-  { key: "strategy",  label: "経営・戦略", en: "STRATEGY" },
-  { key: "branding",  label: "採用・広報", en: "OUTREACH" },
-];
-// タイプ（属性色）ごとの得意・不得意プロファイル（0–100）。自分の領域でピークになるよう設計。
-const PROFILE_BY_COLOR = {
-  blue:   { system: 95, develop: 58, labor: 78, corporate: 74, strategy: 70, branding: 55 }, // 制度系
-  red:    { system: 56, develop: 95, labor: 60, corporate: 70, strategy: 62, branding: 66 }, // 育成系
-  green:  { system: 74, develop: 78, labor: 84, corporate: 93, strategy: 70, branding: 72 }, // コーポレート
-  royal:  { system: 82, develop: 68, labor: 66, corporate: 78, strategy: 95, branding: 70 }, // 経営・参謀
-  cyan:   { system: 72, develop: 56, labor: 95, corporate: 82, strategy: 60, branding: 54 }, // 労務系（HRテック枠を労務に）
-  purple: { system: 72, develop: 88, labor: 64, corporate: 82, strategy: 76, branding: 74 }, // 組織開発
-  orange: { system: 60, develop: 76, labor: 66, corporate: 72, strategy: 64, branding: 94 }, // 採用支援（採用・広報がピーク）
+const CARD_GLOSSARY = {
+  ja: [
+    ["HERO ROLE", "組織の中で担う役割・ポジション。"],
+    ["UNIQUE ABILITY", "その人ならではの固有能力。いちばんの武器。"],
+    ["TARGET ENEMY", "立ち向かう相手・課題（宿敵）。"],
+    ["SOUL HERO", "生き方に共感する、憧れの人物。"],
+    ["SECRET DATA", "意外な素顔・裏話。"],
+  ],
+  en: [
+    ["HERO ROLE", "The role this person plays in the organization."],
+    ["UNIQUE ABILITY", "Their signature strength — the sharpest weapon they bring."],
+    ["TARGET ENEMY", "The problem or pattern they set out to beat."],
+    ["SOUL HERO", "The figure whose way of living they identify with."],
+    ["SECRET DATA", "An unexpected side of them, off the clock."],
+  ],
 };
-// 労務系は色が未定義でも domain/field のキーワードで判定してこのプロファイルに寄せる。
-const PROFILE_LABOR = { system: 70, develop: 54, labor: 96, corporate: 80, strategy: 58, branding: 52 };
-const LABOR_RE = /労務|勤怠|給与|就業|社会保険|オペレーション|オペサポ|実務|手続/;
-// 個別ヒーローの想定値（あれば最優先）。カード内容・人物像から設定。
-const STATN_BY_SLUG = {
-  "tatara-kazumitsu":   { system: 88, develop: 72, labor: 70, corporate: 80, strategy: 97, branding: 74 },
-  "tatara-tateito-coo": { system: 74, develop: 70, labor: 78, corporate: 72, strategy: 88, branding: 70 },
-  "yoshimoto-riho":     { system: 76, develop: 80, labor: 84, corporate: 93, strategy: 72, branding: 72 },
-  "tanaka-rie":         { system: 72, develop: 82, labor: 86, corporate: 90, strategy: 68, branding: 70 },
-  "sample-blue":        { system: 96, develop: 60, labor: 78, corporate: 74, strategy: 72, branding: 56 },
-  "sample-red":         { system: 58, develop: 96, labor: 62, corporate: 72, strategy: 60, branding: 66 },
-};
-function clamp100(n) { n = Number(n); return isFinite(n) ? Math.max(0, Math.min(100, n)) : 0; }
-// プロファイル決定：データ（statsN）> 個別想定（slug）> 労務キーワード > 属性色 > 空。
-function profileFor(h) {
-  if (h.statsN && typeof h.statsN === "object") return h.statsN;
-  if (STATN_BY_SLUG[h.slug]) return STATN_BY_SLUG[h.slug];
-  const txt = String((h.domain || "") + " " + (h.field || "") + " " + (h.code_name || ""));
-  if (LABOR_RE.test(txt)) return PROFILE_LABOR;
-  return PROFILE_BY_COLOR[h.color] || {};
-}
-function statsNFor(h) {
-  const src = profileFor(h);
-  const out = {};
-  STATN.forEach((d) => { out[d.key] = clamp100(src[d.key] != null ? src[d.key] : 70); });
-  return out;
-}
-// N軸レーダー（頂点＝上から時計回りに等間隔）。値は中心からの距離で表す。
-function radarNSvg(h) {
-  const s = statsNFor(h);
-  const N = STATN.length;
-  const W = 392, H = 300, cx = 196, cy = 150, R = 92, LR = R + 22;
-  const ang = STATN.map((_, i) => ((-90 + (360 / N) * i) * Math.PI) / 180);
-  const pt = (i, r) => [cx + r * Math.cos(ang[i]), cy + r * Math.sin(ang[i])];
-  const fmt = (p) => p.map((n) => n.toFixed(1)).join(",");
-  let grid = "";
-  [0.25, 0.5, 0.75, 1].forEach((f) => {
-    grid += `<polygon class="grid-line" points="${ang.map((_, i) => fmt(pt(i, R * f))).join(" ")}"/>`;
-  });
-  let axes = "";
-  ang.forEach((_, i) => { const [x, y] = pt(i, R); axes += `<line class="axis" x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; });
-  const vals = STATN.map((d) => clamp100(s[d.key]));
-  const shape = vals.map((v, i) => fmt(pt(i, (R * v) / 100))).join(" ");
-  const dots = vals.map((v, i) => { const [x, y] = pt(i, (R * v) / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="var(--ink)"/>`; }).join("");
-  let labs = "";
-  STATN.forEach((d, i) => {
-    const [lx, ly] = pt(i, LR);
-    const c = Math.cos(ang[i]), sn = Math.sin(ang[i]);
-    const anchor = Math.abs(c) < 0.35 ? "middle" : c > 0 ? "start" : "end";
-    const dy = sn < -0.3 ? -5 : sn > 0.3 ? 12 : 4;
-    labs += `<text class="lab" x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anchor}">${esc(d.en)}</text>`;
-    labs += `<text class="rank-lab" x="${lx.toFixed(1)}" y="${(ly + dy + 14).toFixed(1)}" text-anchor="${anchor}">${vals[i]}</text>`;
-  });
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="タイプ特性レーダーチャート">${grid}${axes}<polygon class="shape" points="${shape}"/>${dots}${labs}</svg>`;
-}
-function statNLabel(d) { return (DATA.meta.statN_labels && DATA.meta.statN_labels[d.key]) || d.label; }
-// 詳細ビュー用：得意・不得意レーダー（見出し＋SVG＋5軸ラベル）。
-function radarBlock(h) {
-  const s = statsNFor(h);
-  const legend = STATN.map((d) => `<span class="rl-item"><b>${esc(statNLabel(d))}</b><i>${clamp100(s[d.key])}</i></span>`).join("");
-  return `<div class="radar-wrap"><h4>◆ タイプ特性（得意・不得意）</h4><div class="radar">${radarNSvg(h)}</div><div class="radar-legend">${legend}</div></div>`;
-}
-// ヒーローパワー（総合力）＝5軸合計をもとにした戦闘力＋総合ランク。レーダーとは別立て。
-function heroPower(h) {
-  const s = statsNFor(h);
-  const sum = STATN.reduce((a, d) => a + clamp100(s[d.key]), 0);
-  const avg = sum / STATN.length;                                 // 0–100（軸数に依らない）
-  return { power: Math.round(avg * 100), avg: Math.round(avg),     // power: 0–10000（戦闘力風）
-    rank: avg >= 88 ? "S" : avg >= 80 ? "A" : avg >= 72 ? "B" : avg >= 64 ? "C" : "D" };
-}
-function heroPowerBlock(h) {
-  const { power, avg, rank } = heroPower(h);
-  return `<div class="hp-wrap">
-    <h4>◆ ヒーローパワー</h4>
-    <div class="hp-body">
-      <div class="hp-num"><span class="hp-value">${power.toLocaleString()}</span><span class="hp-unit">pt</span></div>
-      <div class="hp-rank" title="総合ランク">${rank}</div>
-    </div>
-    <div class="hp-gauge"><span style="width:${avg}%"></span></div>
-  </div>`;
-}
 
 /* ---------- 復号ユーティリティ（Web Crypto / PBKDF2-SHA256 → AES-256-GCM） ---------- */
 function b64ToBytes(b64) {
@@ -178,15 +131,17 @@ function encImg(path, name) {
   return `<div class="ph" data-enc="${esc(path)}"><b>${esc(name)}</b><small>復号中…</small></div>`;
 }
 
-// タイル/詳細左の顔ポートレート。顔切り抜き(portrait_img)を優先し、無ければ元イラスト。
+// タイル/詳細左の顔ポートレート。顔切り抜き(portrait_img) > 元イラスト > カード画像の順に使う。
+// カード画像しか無い人（Excel一括取り込み組）は、カードの上寄りを切り出して顔を見せる（.from-card）。
 function portrait(h) {
-  const src = h.portrait_img || h.illustration;
+  const src = h.portrait_img || h.illustration || h.card;
+  const fromCard = !h.portrait_img && !h.illustration && h.card ? " from-card" : "";
   if (src) {
     if (src.endsWith(".enc")) {
       // 復号は後追い（data-enc）。まずプレースホルダ。
-      return `<div class="ph" data-enc="${esc(src)}"><b>${esc(h.name)}</b><small>復号中…</small></div>`;
+      return `<div class="ph${fromCard}" data-enc="${esc(src)}"><b>${esc(h.name)}</b><small>復号中…</small></div>`;
     }
-    return `<img src="${esc(src)}" alt="${esc(h.name)}"
+    return `<img class="${fromCard.trim()}" src="${esc(src)}" alt="${esc(h.name)}"
       onerror="this.parentNode.innerHTML='<div class=&quot;ph&quot;><b>${esc(h.name)}</b><small>イラスト未設定</small></div>'">`;
   }
   return `<div class="ph"><b>${esc(h.name)}</b><small>イラスト未設定</small></div>`;
@@ -201,6 +156,8 @@ async function hydrateImages(root) {
       const url = await decryptImage(el.getAttribute("data-enc"));
       const img = new Image();
       img.src = url; img.alt = "";
+      // カード画像を顔タイルとして使う場合の切り出し指定を引き継ぐ
+      if (el.classList.contains("from-card")) img.className = "from-card";
       el.replaceWith(img);
     } catch (e) {
       el.innerHTML = "<b>復号エラー</b>";
@@ -218,8 +175,8 @@ function cardHtml(h, i) {
       <div class="field-tab">${esc(h.field || "")}</div>
     </div>
     <div class="meta">
-      <p class="name">${esc(h.name)}<small>${esc(h.name_en || "")}</small></p>
-      <p class="catch">${esc(h.catchphrase || "")}</p>
+      <p class="name">${esc(LANG === "en" ? (h.name_en || h.name) : h.name)}<small>${esc(LANG === "en" ? h.name : (h.name_en || ""))}</small></p>
+      <p class="catch">${esc(tx(h, "catchphrase"))}</p>
       <div class="badges">
         <span class="badge" style="background:${hex};color:#fff">${esc(colorLabel(h.color))}</span>
       </div>
@@ -235,6 +192,38 @@ function sectionHtml(label, obj) {
   return `<div class="sec"><h4><span>${esc(label)}</span></h4>${name}${desc}</div>`;
 }
 
+// 図鑑だけに出す項目（カードには刷られていない）：専門領域・得意戦術・AI装備。
+// 専門領域と得意戦術は「、」区切りの列挙なのでタグに割る。空なら見出しごと出さない。
+function tagsHtml(label, value) {
+  const v = String(value || "").trim();
+  if (!v) return "";
+  const items = v.split(/[、,]/).map((s) => s.trim()).filter(Boolean);
+  if (items.length < 2) return `<div class="d-zk"><h4>${esc(label)}</h4><p>${esc(v)}</p></div>`;
+  return `<div class="d-zk"><h4>${esc(label)}</h4><div class="zk-tags">` +
+    items.map((s) => `<span class="zk-tag">${esc(s)}</span>`).join("") + `</div></div>`;
+}
+function aiHtml(h) {
+  const o = txSec(h, "ai_equipment");
+  if (!o || (!o.name && !o.desc)) return "";
+  const name = o.name ? `<div class="zk-name">${esc(o.name)}</div>` : "";
+  const desc = o.desc ? `<p>${esc(o.desc)}</p>` : "";
+  return `<div class="d-zk"><h4>${esc(t("ai"))}</h4>${name}${desc}</div>`;
+}
+// 図鑑限定ブロックをまとめて返す
+function zukanOnlyHtml(h) {
+  return tagsHtml(t("mastery"), tx(h, "mastery")) + tagsHtml(t("tactics"), tx(h, "tactics")) + aiHtml(h);
+}
+// カードに刷られている項目（テキスト版）。カード画像が無い人と、EN表示のときに使う。
+function cardTextHtml(h) {
+  const enemy = tx(h, "target_enemy");
+  const secret = tx(h, "secret_data");
+  return sectionHtml(t("role"), txSec(h, "hero_role")) +
+    sectionHtml(t("ability"), txSec(h, "super_power")) +
+    (enemy ? `<div class="sec"><h4><span>${esc(t("enemy"))}</span></h4><p>${esc(enemy)}</p></div>` : "") +
+    sectionHtml(t("soul"), txSec(h, "soul_hero")) +
+    (secret ? `<div class="sec"><h4><span>${esc(t("secret"))}</span></h4><p>${esc(secret)}</p></div>` : "");
+}
+
 // Phase 2: カードに載らないアンケート項目を詳細だけに展開する。
 // h.profile は「表示ラベル→値」の順序付きオブジェクト（項目名はデータ側が決める）。
 // 空・未設定なら何も出さない（不参加者・未回答でも崩れない）。
@@ -246,55 +235,47 @@ function profileHtml(h) {
     .map((k) => `<div class="pf-row"><dt>${esc(k)}</dt><dd>${esc(p[k])}</dd></div>`)
     .join("");
   if (!rows) return "";
-  return `<div class="d-profile"><h4>◆ アンケートから</h4><dl>${rows}</dl></div>`;
+  return `<div class="d-profile"><h4>${esc(t("survey"))}</h4><dl>${rows}</dl></div>`;
 }
 
 function detailHtml(h, i) {
   const hex = colorHex(h.color);
-  const secret = h.secret_data ? `<div class="sec"><h4><span>SECRET DATA</span></h4><p>${esc(h.secret_data)}</p></div>` : "";
-  // 宿敵（文字列・新規）。値があるときだけ描く。
-  const targetEnemy = h.target_enemy
-    ? `<div class="sec"><h4><span>TARGET ENEMY（宿敵）</span></h4><p>${esc(h.target_enemy)}</p></div>`
-    : "";
   const header = `<div class="d-top">
       <div class="d-num">${no(i)}</div>
       <div class="d-field">[FIELD] ${esc(h.field || "")} — ${esc(colorLabel(h.color))}</div>
       <div class="d-name display">${esc(h.name)} <small>${esc(h.name_en || "")}</small></div>
+      <p class="d-catch">${esc(tx(h, "catchphrase"))}</p>
     </div>`;
-  // セクション順：Hero Role → Unique Ability → Target Enemy → Soul Hero → Secret Data
-  const rightContent = `${sectionHtml("HERO ROLE", h.hero_role)}
-        ${sectionHtml("UNIQUE ABILITY（固有能力）", h.super_power)}
-        ${targetEnemy}
-        ${sectionHtml("SOUL HERO", h.soul_hero)}
-        ${secret}
-        ${radarBlock(h)}
-        ${heroPowerBlock(h)}
-        ${profileHtml(h)}`;
-  // フルカード画像がある場合：左にカードそのまま表示、右は「項目の見かた（凡例）」で占有
-  // （各項目の中身はカード画像に載っているため、右は凡例に集中させる）
+
+  // カード画像がある場合：左にカードそのまま、右は図鑑だけの項目＋凡例。
+  // ただしカードの文字は日本語で焼き込まれているので、EN表示のときは右に英文の全文も出す。
   if (h.card) {
     const glossary = `<div class="d-glossary">
-        <div class="g-head">◆ 項目の見かた</div>
-        ${CARD_GLOSSARY.map(([k, v]) => `<div class="g-row"><span class="g-label">${esc(k)}</span><span class="g-desc">${esc(v)}</span></div>`).join("")}
+        <div class="g-head">${esc(t("glossary"))}</div>
+        ${CARD_GLOSSARY[LANG].map(([k, v]) => `<div class="g-row"><span class="g-label">${esc(k)}</span><span class="g-desc">${esc(v)}</span></div>`).join("")}
       </div>`;
-    const bigStatus = `<div class="d-status-big">${radarBlock(h)}${heroPowerBlock(h)}${glossary}${profileHtml(h)}</div>`;
+    const right = LANG === "en"
+      ? `${cardTextHtml(h)}${zukanOnlyHtml(h)}${profileHtml(h)}`
+      : `${zukanOnlyHtml(h)}${glossary}${profileHtml(h)}`;
     return `<div class="detail detail-card" style="--c:${hex}">
       ${header}
       <div class="d-main">
         <div class="d-left d-left-card">
           <div class="d-cardimg">${encImg(h.card, h.name)}</div>
         </div>
-        <div class="d-right d-right-status">${bigStatus}</div>
+        <div class="d-right d-right-status"><div class="d-side">${right}</div></div>
       </div>
     </div>`;
   }
+
+  // カード画像がまだ無い人：顔＋テキストで同じ内容を出す（並びはカードと同じ）。
   return `<div class="detail" style="--c:${hex}">
     ${header}
     <div class="d-main">
       <div class="d-left">
         <div class="d-portrait">${portrait(h)}</div>
       </div>
-      <div class="d-right">${rightContent}</div>
+      <div class="d-right">${cardTextHtml(h)}${zukanOnlyHtml(h)}${profileHtml(h)}</div>
     </div>
   </div>`;
 }
@@ -311,36 +292,67 @@ function renderFilters() {
     html += `<button class="chip ${act}" data-color="${key}" ${style}><span class="dot" style="background:${c.hex}"></span>${esc(c.label)}</button>`;
   });
   $("#filters").innerHTML = html;
+  renderFieldFilter();
+}
+
+// FIELD（英字カテゴリ）での絞り込み。人数が増えて色だけでは絞りきれないので別軸で用意する。
+function renderFieldFilter() {
+  const sel = $("#fieldFilter");
+  if (!sel) return;
+  const fields = [...new Set(DATA.heroes.map((h) => h.field).filter(Boolean))].sort();
+  sel.innerHTML = `<option value="all">${esc(t("allField"))}</option>` +
+    fields.map((f) => `<option value="${esc(f)}" ${f === activeField ? "selected" : ""}>${esc(f)}</option>`).join("");
+  sel.hidden = fields.length < 2;
 }
 
 function renderGrid() {
   const kw = keyword.trim().toLowerCase();
   const list = DATA.heroes.map((h, i) => ({ h, i })).filter(({ h }) => {
     if (activeColor !== "all" && h.color !== activeColor) return false;
+    if (activeField !== "all" && h.field !== activeField) return false;
     if (!kw) return true;
-    return [h.name, h.name_en, h.code_name, h.catchphrase].some((v) => String(v || "").toLowerCase().includes(kw));
+    // 日本語・英語どちらで打っても引っかかるようにする（英訳も検索対象に入れる）
+    const en = h.en || {};
+    return [h.name, h.name_en, h.field, h.catchphrase, h.mastery, h.tactics,
+      en.catchphrase, en.mastery, en.tactics]
+      .some((v) => String(v || "").toLowerCase().includes(kw));
   });
   $("#grid").innerHTML = list.map(({ h, i }) => cardHtml(h, i)).join("");
   $("#empty").hidden = list.length !== 0;
-  $("#count").textContent = `全 ${DATA.heroes.length} 名中 ${list.length} 名を表示`;
+  $("#count").textContent = t("count")(DATA.heroes.length, list.length);
   hydrateImages($("#grid"));
 }
 
+let openSlug = null; // 言語を切り替えたとき、開いている詳細を描き直すために覚えておく
 function openModal(slug) {
   const i = DATA.heroes.findIndex((x) => x.slug === slug);
   if (i < 0) return;
+  openSlug = slug;
   $("#modalCard").innerHTML = detailHtml(DATA.heroes[i], i);
   hydrateImages($("#modalCard"));
   $("#modal").hidden = false;
   document.body.style.overflow = "hidden";
 }
-function closeModal() { $("#modal").hidden = true; document.body.style.overflow = ""; }
+function closeModal() { $("#modal").hidden = true; openSlug = null; document.body.style.overflow = ""; }
+
+// 表示言語の切り替え。開いている詳細もその場で描き直す。
+function setLang(lang) {
+  LANG = lang === "en" ? "en" : "ja";
+  try { sessionStorage.setItem("pt_lang", LANG); } catch (_) {}
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("#langToggle button").forEach((b) => b.classList.toggle("on", b.dataset.lang === LANG));
+  renderFieldFilter();
+  renderGrid();
+  if (openSlug) openModal(openSlug);
+}
 
 function bindApp() {
   $("#filters").addEventListener("click", (e) => {
     const b = e.target.closest(".chip"); if (!b) return;
     activeColor = b.dataset.color; renderFilters(); renderGrid();
   });
+  $("#fieldFilter").addEventListener("change", (e) => { activeField = e.target.value; renderGrid(); });
+  $("#langToggle").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setLang(b.dataset.lang); });
   $("#search").addEventListener("input", (e) => { keyword = e.target.value; renderGrid(); });
   $("#grid").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) openModal(c.dataset.slug); });
   $("#modal").addEventListener("click", (e) => { if (e.target.dataset.close !== undefined) closeModal(); });
@@ -357,6 +369,9 @@ async function unlock(pw) {
   if (DATA.meta.note) $("#notice").title = DATA.meta.note;
   $("#gate").hidden = true;
   $("#app").hidden = false;
+  try { LANG = sessionStorage.getItem("pt_lang") === "en" ? "en" : "ja"; } catch (_) {}
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("#langToggle button").forEach((b) => b.classList.toggle("on", b.dataset.lang === LANG));
   renderFilters();
   renderGrid();
   bindApp();
