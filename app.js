@@ -361,6 +361,29 @@ function renderGrid() {
   hydrateImages($("#grid"));
 }
 
+/* ---------- 使い方の動画 ----------
+   合言葉を入れた人だけが見られるよう、カードやイラストと同じく暗号化して置く。
+   置き場所を変えるときは HOWTO_VIDEO を直す。 */
+const HOWTO_VIDEO = "assets/videos/zukan-guide.enc";
+let howtoUrl = null; // 復号後のblob URL（2回目以降は再利用）
+
+async function openHowto() {
+  const btn = $("#howtoBtn");
+  $("#modalCard").innerHTML = `<div class="howto-wrap"><p class="howto-msg">読み込み中…</p></div>`;
+  $("#modal").hidden = false;
+  document.body.style.overflow = "hidden";
+  try {
+    btn.disabled = true;
+    if (!howtoUrl) howtoUrl = await decryptImage(HOWTO_VIDEO); // .encを復号してblob URLにする
+    $("#modalCard").innerHTML =
+      `<div class="howto-wrap"><video src="${howtoUrl}" controls autoplay playsinline></video></div>`;
+  } catch (e) {
+    $("#modalCard").innerHTML = `<div class="howto-wrap"><p class="howto-msg">動画を読み込めませんでした。</p></div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 let openSlug = null; // 言語を切り替えたとき、開いている詳細を描き直すために覚えておく
 function openModal(slug) {
   const i = DATA.heroes.findIndex((x) => x.slug === slug);
@@ -391,6 +414,7 @@ function bindApp() {
   });
   $("#fieldFilter").addEventListener("change", (e) => { activeField = e.target.value; renderGrid(); });
   $("#langToggle").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setLang(b.dataset.lang); });
+  $("#howtoBtn").addEventListener("click", openHowto);
   $("#search").addEventListener("input", (e) => { keyword = e.target.value; renderGrid(); });
   $("#grid").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) openModal(c.dataset.slug); });
   $("#modal").addEventListener("click", (e) => { if (e.target.dataset.close !== undefined) closeModal(); });
@@ -413,6 +437,8 @@ async function unlock(pw) {
   renderFilters();
   renderGrid();
   bindApp();
+  // 使い方の動画は置いてあるときだけボタンを出す（無くても図鑑は動く）
+  fetch(HOWTO_VIDEO, { method: "HEAD" }).then((r) => { $("#howtoBtn").hidden = !r.ok; }).catch(() => {});
   preloadImages(); // カード画像を背景で先読み → モーダルが即開く
 }
 

@@ -135,6 +135,18 @@ body {
 }
 .lang-toggle button + button { border-left: 2.5px solid var(--ink); }
 .lang-toggle button.on { background: var(--ink); color: #fff; }
+/* 使い方の動画（合言葉を入れた人だけが見られる） */
+.howto-btn {
+  background: #ffd21e; border: 2.5px solid var(--ink); color: var(--ink); cursor: pointer;
+  font-family: inherit; font-weight: 800; font-size: 13px; padding: 8px 14px;
+  box-shadow: 2px 2px 0 rgba(22,19,15,.85);
+}
+.howto-btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 rgba(22,19,15,.85); }
+.howto-btn:active { transform: translate(2px,2px); box-shadow: none; }
+.howto-btn[hidden] { display: none; }
+.howto-wrap { background: var(--ink); padding: 10px; }
+.howto-wrap video { display: block; width: 100%; max-height: 78vh; background: #000; }
+.howto-msg { color: #fff; text-align: center; padding: 60px 20px; font-weight: 700; margin: 0; }
 
 /* ===== Grid ===== */
 .grid {
