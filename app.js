@@ -318,28 +318,48 @@ function detailHtml(h, i) {
   </div>`;
 }
 
+/* 色（属性）と領域（FIELD）は独立した軸ではない。57名で実在する組み合わせは13通りだけで、
+   5色×9領域の総当たり45通りを並べると、大半が「選ぶと0名」の行き止まりになる。
+   そこで片方を選んだら、もう片方は相手側で実在する選択肢だけを出す（0名の選択肢は作らない）。 */
+function countBy(list, key) {
+  const m = new Map();
+  list.forEach((h) => { const v = h[key]; if (v) m.set(v, (m.get(v) || 0) + 1); });
+  return m;
+}
+function n(v) { return LANG === "en" ? ` (${v})` : `（${v}）`; }
+
 function renderFilters() {
+  // 色を変えた結果、選んでいた領域が誰も居なくなったら領域の絞り込みは外す（0名で固まらせない）
+  if (activeField !== "all" && activeColor !== "all" &&
+      !DATA.heroes.some((h) => h.color === activeColor && h.field === activeField)) activeField = "all";
+
   const colors = DATA.meta.colors || {};
   const used = new Set(DATA.heroes.map((h) => h.color));
+  const byColor = countBy(DATA.heroes.filter((h) => activeField === "all" || h.field === activeField), "color");
   let html = `<button class="chip ${activeColor === "all" ? "active" : ""}" data-color="all" ${activeColor === "all" ? 'style="background:#16130f;color:#fff"' : ""}>ALL</button>`;
   Object.keys(colors).forEach((key) => {
     if (!used.has(key)) return;
     const c = colors[key];
     const act = activeColor === key ? "active" : "";
+    const cnt = byColor.get(key) || 0;
+    const off = cnt === 0 && !act ? "off" : ""; // いま選んでいる領域に該当者が居ない色は押せなくする
     const style = act ? `style="background:${c.hex};color:#fff"` : "";
-    html += `<button class="chip ${act}" data-color="${key}" ${style}><span class="dot" style="background:${c.hex}"></span>${esc(c.label)}</button>`;
+    html += `<button class="chip ${act} ${off}" data-color="${key}" ${off ? "disabled" : ""} ${style}><span class="dot" style="background:${c.hex}"></span>${esc(c.label)}</button>`;
   });
   $("#filters").innerHTML = html;
   renderFieldFilter();
 }
 
 // FIELD（英字カテゴリ）での絞り込み。人数が増えて色だけでは絞りきれないので別軸で用意する。
+// 選択肢はいま選んでいる色の中に実在する領域だけ。人数も出して、選ぶ前に何名居るか分かるようにする。
 function renderFieldFilter() {
   const sel = $("#fieldFilter");
   if (!sel) return;
-  const fields = [...new Set(DATA.heroes.map((h) => h.field).filter(Boolean))].sort();
-  sel.innerHTML = `<option value="all">${esc(t("allField"))}</option>` +
-    fields.map((f) => `<option value="${esc(f)}" ${f === activeField ? "selected" : ""}>${esc(f)}</option>`).join("");
+  const pool = DATA.heroes.filter((h) => activeColor === "all" || h.color === activeColor);
+  const byField = countBy(pool, "field");
+  const fields = [...byField.keys()].sort();
+  sel.innerHTML = `<option value="all">${esc(t("allField"))}${n(pool.length)}</option>` +
+    fields.map((f) => `<option value="${esc(f)}" ${f === activeField ? "selected" : ""}>${esc(f)}${n(byField.get(f))}</option>`).join("");
   sel.hidden = fields.length < 2;
 }
 
@@ -409,10 +429,11 @@ function setLang(lang) {
 
 function bindApp() {
   $("#filters").addEventListener("click", (e) => {
-    const b = e.target.closest(".chip"); if (!b) return;
+    const b = e.target.closest(".chip"); if (!b || b.disabled) return;
     activeColor = b.dataset.color; renderFilters(); renderGrid();
   });
-  $("#fieldFilter").addEventListener("change", (e) => { activeField = e.target.value; renderGrid(); });
+  // 領域を変えたら色チップの押せる/押せないも変わるので、両方描き直す
+  $("#fieldFilter").addEventListener("change", (e) => { activeField = e.target.value; renderFilters(); renderGrid(); });
   $("#langToggle").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setLang(b.dataset.lang); });
   $("#howtoBtn").addEventListener("click", openHowto);
   $("#search").addEventListener("input", (e) => { keyword = e.target.value; renderGrid(); });

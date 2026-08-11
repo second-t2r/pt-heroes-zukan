@@ -107,6 +107,9 @@ body {
 .chip:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 rgba(22,19,15,.85); }
 .chip:active { transform: translate(2px,2px); box-shadow: none; }
 .chip.active { color: #fff; }
+/* いま選んでいる領域に該当者が居ない色。押しても0名なので、押せないと分かる見た目にする */
+.chip.off { opacity: .3; cursor: default; box-shadow: none; }
+.chip.off:hover { transform: none; box-shadow: none; }
 .chip .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; border: 1.5px solid var(--ink); vertical-align: middle; }
 .search {
   background: #fff;
