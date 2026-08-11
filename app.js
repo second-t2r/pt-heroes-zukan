@@ -285,16 +285,16 @@ function detailHtml(h, i) {
       <p class="d-catch">${esc(tx(h, "catchphrase"))}</p>
     </div>`;
 
-  // カード画像がある場合：左にカードそのまま、右は図鑑だけの項目＋凡例。
-  // ただしカードの文字は日本語で焼き込まれているので、EN表示のときは右に英文の全文も出す。
+  // 右側の中身はカードの有無にかかわらず同じにする。
+  // カード画像の文字は画像なのでコピーも検索もできず、小さい画面では読みにくい。
+  // カードは「現物の絵」として左に置き、読む内容はテキストで出す。
+  const glossary = `<div class="d-glossary">
+      <div class="g-head">${esc(t("glossary"))}</div>
+      ${CARD_GLOSSARY[LANG].map(([k, v]) => `<div class="g-row"><span class="g-label">${esc(k)}</span><span class="g-desc">${esc(v)}</span></div>`).join("")}
+    </div>`;
+  const right = `${cardTextHtml(h)}${zukanOnlyHtml(h)}${glossary}${profileHtml(h)}`;
+
   if (h.card) {
-    const glossary = `<div class="d-glossary">
-        <div class="g-head">${esc(t("glossary"))}</div>
-        ${CARD_GLOSSARY[LANG].map(([k, v]) => `<div class="g-row"><span class="g-label">${esc(k)}</span><span class="g-desc">${esc(v)}</span></div>`).join("")}
-      </div>`;
-    const right = LANG === "en"
-      ? `${cardTextHtml(h)}${zukanOnlyHtml(h)}${profileHtml(h)}`
-      : `${zukanOnlyHtml(h)}${glossary}${profileHtml(h)}`;
     return `<div class="detail detail-card" style="--c:${hex}">
       ${header}
       <div class="d-main">
@@ -306,14 +306,14 @@ function detailHtml(h, i) {
     </div>`;
   }
 
-  // カード画像がまだ無い人：顔＋テキストで同じ内容を出す（並びはカードと同じ）。
+  // カード画像がまだ無い人：左は顔だけ差し替え、右は同じ構成。
   return `<div class="detail" style="--c:${hex}">
     ${header}
     <div class="d-main">
       <div class="d-left">
         <div class="d-portrait">${portrait(h)}</div>
       </div>
-      <div class="d-right">${cardTextHtml(h)}${zukanOnlyHtml(h)}${profileHtml(h)}</div>
+      <div class="d-right"><div class="d-side">${right}</div></div>
     </div>
   </div>`;
 }

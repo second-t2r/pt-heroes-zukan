@@ -329,6 +329,7 @@ body {
 
 /* カード版の右パネル＝図鑑だけの項目（専門領域・得意戦術・AI装備）＋項目凡例 */
 .detail-card .d-right-status { display: flex; }
+.detail .d-right > .d-side { padding: 14px 16px; }
 .detail-card .d-side {
   flex: 1 1 auto;
   display: flex; flex-direction: column;
