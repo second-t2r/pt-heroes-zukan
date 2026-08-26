@@ -129,7 +129,11 @@ function colorLabel(color) { const c = DATA.meta.colors && DATA.meta.colors[colo
 function esc(s) {
   return String(s ?? "").replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
 }
-function no(i) { return "No." + String(i + 1).padStart(3, "0"); }
+/* ナンバーは hero.no（コンソールで決めた並び順の番号）。
+   以前は配列の何番目かで出していたため、Excelを取り込み直すたびに番号が変わり、
+   コンソールから並べ替えることもできなかった。
+   no を持たないデータ（このしくみより前に作られたもの）は読み込み順で補う。 */
+function no(h) { return "No." + String(h && h.no ? h.no : 0).padStart(3, "0"); }
 
 // 暗号化画像(.enc)のプレースホルダ（hydrateImagesが復号して差し込む）
 function encImg(path, name) {
@@ -203,11 +207,11 @@ async function hydrateImages(root) {
   }));
 }
 
-function cardHtml(h, i) {
+function cardHtml(h) {
   const hex = colorHex(h.color);
   // 一覧タイルは全ヒーロー共通スタイル（顔ポートレート＋メタ）。カード全体はクリック後に表示。
   return `<article class="card" style="--c:${hex}" data-slug="${esc(h.slug)}">
-    <div class="num">${no(i)}</div>
+    <div class="num">${no(h)}</div>
     <div class="portrait">
       ${portrait(h, true)}
       <div class="field-tab">${esc(h.field || "")}</div>
@@ -276,10 +280,10 @@ function profileHtml(h) {
   return `<div class="d-profile"><h4>${esc(t("survey"))}</h4><dl>${rows}</dl></div>`;
 }
 
-function detailHtml(h, i) {
+function detailHtml(h) {
   const hex = colorHex(h.color);
   const header = `<div class="d-top">
-      <div class="d-num">${no(i)}</div>
+      <div class="d-num">${no(h)}</div>
       <div class="d-field">[FIELD] ${esc(h.field || "")} — ${esc(colorLabel(h.color))}</div>
       <div class="d-name display">${esc(h.name)} <small>${esc(h.name_en || "")}</small></div>
       <p class="d-catch">${esc(tx(h, "catchphrase"))}</p>
@@ -365,7 +369,7 @@ function renderFieldFilter() {
 
 function renderGrid() {
   const kw = keyword.trim().toLowerCase();
-  const list = DATA.heroes.map((h, i) => ({ h, i })).filter(({ h }) => {
+  const list = DATA.heroes.filter((h) => {
     if (activeColor !== "all" && h.color !== activeColor) return false;
     if (activeField !== "all" && h.field !== activeField) return false;
     if (!kw) return true;
@@ -375,7 +379,7 @@ function renderGrid() {
       en.catchphrase, en.mastery, en.tactics]
       .some((v) => String(v || "").toLowerCase().includes(kw));
   });
-  $("#grid").innerHTML = list.map(({ h, i }) => cardHtml(h, i)).join("");
+  $("#grid").innerHTML = list.map((h) => cardHtml(h)).join("");
   $("#empty").hidden = list.length !== 0;
   $("#count").textContent = t("count")(DATA.heroes.length, list.length);
   hydrateImages($("#grid"));
@@ -406,10 +410,10 @@ async function openHowto() {
 
 let openSlug = null; // 言語を切り替えたとき、開いている詳細を描き直すために覚えておく
 function openModal(slug) {
-  const i = DATA.heroes.findIndex((x) => x.slug === slug);
-  if (i < 0) return;
+  const h = DATA.heroes.find((x) => x.slug === slug);
+  if (!h) return;
   openSlug = slug;
-  $("#modalCard").innerHTML = detailHtml(DATA.heroes[i], i);
+  $("#modalCard").innerHTML = detailHtml(h);
   hydrateImages($("#modalCard"));
   $("#modal").hidden = false;
   document.body.style.overflow = "hidden";
@@ -442,11 +446,20 @@ function bindApp() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 }
 
+/* 並び順は hero.no。no を持たないデータは読み込み順のまま番号を振る
+   （このしくみより前に公開したファイルを開いても、番号が消えないようにする）。 */
+function orderHeroes() {
+  const list = DATA.heroes || [];
+  list.forEach((h, i) => { if (!(Number(h.no) > 0)) h.no = i + 1; });
+  list.sort((a, b) => a.no - b.no);
+}
+
 /* ---------- 起動：パスワード復号 ---------- */
 async function unlock(pw) {
   const meta = await fetch("data/heroes.enc", { cache: "no-store" }).then((r) => r.json());
   const buf = await decryptEnc(meta, pw); // 失敗すれば例外
   DATA = JSON.parse(new TextDecoder().decode(buf));
+  orderHeroes();
   PASSWORD = pw;
   if (DATA.meta.subtitle) $("#subtitle").textContent = DATA.meta.subtitle;
   if (DATA.meta.note) $("#notice").title = DATA.meta.note;
